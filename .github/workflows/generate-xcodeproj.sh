@@ -1,12 +1,21 @@
 #!/bin/bash
+set -e
 
 # Create Xcode project directory
 mkdir -p lua.xcodeproj
 
 # Generate source file list
-SOURCE_FILES=$(ls *.c | grep -v 'lua.c\|onelua.c\|ltests.c')
+SOURCE_FILES=$(ls *.c | grep -v 'lua\.c\|onelua\.c\|ltests\.c')
 
-# Create temporary project file
+# Create unique UUIDs for each file
+declare -A FILE_UUIDS
+declare -A FILE_REF_UUIDS
+for file in $SOURCE_FILES; do
+  FILE_UUIDS[$file]=$(uuidgen | tr -d - | cut -c1-24)
+  FILE_REF_UUIDS[$file]=$(uuidgen | tr -d - | cut -c1-24)
+done
+
+# Create project file
 {
   echo "// !$*UTF8*$!"
   echo "{"
@@ -18,33 +27,27 @@ SOURCE_FILES=$(ls *.c | grep -v 'lua.c\|onelua.c\|ltests.c')
   # PBXBuildFile section
   echo "    /* Begin PBXBuildFile section */"
   for file in $SOURCE_FILES; do
-    UUID1=$(uuidgen | tr -d - | cut -c1-24)
-    UUID2=$(uuidgen | tr -d - | cut -c1-24)
-    echo "    $UUID1 /* $file in Sources */ = {isa = PBXBuildFile; fileRef = $UUID2 /* $file */; };"
+    echo "    ${FILE_UUIDS[$file]} /* $file in Sources */ = {isa = PBXBuildFile; fileRef = ${FILE_REF_UUIDS[$file]} /* $file */; };"
   done
   echo "    /* End PBXBuildFile section */"
   
   # PBXFileReference section
   echo "    /* Begin PBXFileReference section */"
   for file in $SOURCE_FILES; do
-    UUID=$(uuidgen | tr -d - | cut -c1-24)
-    echo "    $UUID /* $file */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = $file; sourceTree = \"<group>\"; };"
+    echo "    ${FILE_REF_UUIDS[$file]} /* $file */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = $file; sourceTree = \"<group>\"; };"
   done
   echo "    8D1107320486CEB800E47090 /* liblua.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = liblua.a; sourceTree = BUILT_PRODUCTS_DIR; };"
   echo "    /* End PBXFileReference section */"
   
   # PBXFrameworksBuildPhase section
-  cat << "EOFFW"
-    /* Begin PBXFrameworksBuildPhase section */
-    8D11072E0486CEB800E47090 /* Frameworks */ = {
-      isa = PBXFrameworksBuildPhase;
-      buildActionMask = 2147483647;
-      files = (
-      );
-      runOnlyForDeploymentPostprocessing = 0;
-    };
-    /* End PBXFrameworksBuildPhase section */
-EOFFW
+  echo "    /* Begin PBXFrameworksBuildPhase section */"
+  echo "    8D11072E0486CEB800E47090 /* Frameworks */ = {"
+  echo "      isa = PBXFrameworksBuildPhase;"
+  echo "      buildActionMask = 2147483647;"
+  echo "      files = ();"
+  echo "      runOnlyForDeploymentPostprocessing = 0;"
+  echo "    };"
+  echo "    /* End PBXFrameworksBuildPhase section */"
   
   # PBXGroup section
   echo "    /* Begin PBXGroup section */"
@@ -52,125 +55,119 @@ EOFFW
   echo "      isa = PBXGroup;"
   echo "      children = ("
   for file in $SOURCE_FILES; do
-    UUID=$(uuidgen | tr -d - | cut -c1-24)
-    echo "        $UUID /* $file */,"
+    echo "        ${FILE_REF_UUIDS[$file]} /* $file */,"
   done
+  echo "        8D1107320486CEB800E47090 /* liblua.a */,"
   echo "      );"
   echo "      sourceTree = \"<group>\";"
   echo "    };"
   echo "    /* End PBXGroup section */"
   
-  # Add remaining sections
-  cat << "EOFREM"
-    /* Begin PBXNativeTarget section */
-    8D1107260486CEB800E47090 /* lua */ = {
-      isa = PBXNativeTarget;
-      buildConfigurationList = 4D7A7B8A0ABF745500C91562 /* Build configuration list for PBXNativeTarget "lua" */;
-      buildPhases = (
-        8D1107290486CEB800E47090 /* Sources */,
-        8D11072E0486CEB800E47090 /* Frameworks */,
-      );
-      buildRules = (
-      );
-      dependencies = (
-      );
-      name = lua;
-      productName = lua;
-      productReference = 8D1107320486CEB800E47090 /* liblua.a */;
-      productType = "com.apple.product-type.library.static";
-    };
-    /* End PBXNativeTarget section */
-    
-    /* Begin PBXProject section */
-    29B97313FDCFA39411CA2CEA /* Project object */ = {
-      isa = PBXProject;
-      buildConfigurationList = 4D7A7B890ABF745500C91562 /* Build configuration list for PBXProject "lua" */;
-      compatibilityVersion = "Xcode 14.0";
-      developmentRegion = en;
-      hasScannedForEncodings = 1;
-      knownRegions = (
-        en,
-        Base,
-      );
-      mainGroup = 29B97314FDCFA39411CA2CEA /* lua */;
-      productRefGroup = 29B97314FDCFA39411CA2CEA /* lua */;
-      projectDirPath = "";
-      projectRoot = "";
-      targets = (
-        8D1107260486CEB800E47090 /* lua */,
-      );
-    };
-    /* End PBXProject section */
-    
-    /* Begin PBXSourcesBuildPhase section */
-    8D1107290486CEB800E47090 /* Sources */ = {
-      isa = PBXSourcesBuildPhase;
-      buildActionMask = 2147483647;
-      files = (
-EOFREM
-
+  # PBXNativeTarget section
+  echo "    /* Begin PBXNativeTarget section */"
+  echo "    8D1107260486CEB800E47090 /* lua */ = {"
+  echo "      isa = PBXNativeTarget;"
+  echo "      buildConfigurationList = 4D7A7B8A0ABF745500C91562 /* Build configuration list for PBXNativeTarget \"lua\" */;"
+  echo "      buildPhases = ("
+  echo "        8D1107290486CEB800E47090 /* Sources */,"
+  echo "        8D11072E0486CEB800E47090 /* Frameworks */,"
+  echo "      );"
+  echo "      buildRules = ();"
+  echo "      dependencies = ();"
+  echo "      name = lua;"
+  echo "      productName = lua;"
+  echo "      productReference = 8D1107320486CEB800E47090 /* liblua.a */;"
+  echo "      productType = \"com.apple.product-type.library.static\";"
+  echo "    };"
+  echo "    /* End PBXNativeTarget section */"
+  
+  # PBXProject section
+  echo "    /* Begin PBXProject section */"
+  echo "    29B97313FDCFA39411CA2CEA /* Project object */ = {"
+  echo "      isa = PBXProject;"
+  echo "      buildConfigurationList = 4D7A7B890ABF745500C91562 /* Build configuration list for PBXProject \"lua\" */;"
+  echo "      compatibilityVersion = \"Xcode 14.0\";"
+  echo "      developmentRegion = en;"
+  echo "      hasScannedForEncodings = 1;"
+  echo "      knownRegions = (en, Base);"
+  echo "      mainGroup = 29B97314FDCFA39411CA2CEA /* lua */;"
+  echo "      productRefGroup = 29B97314FDCFA39411CA2CEA /* lua */;"
+  echo "      projectDirPath = \"\";"
+  echo "      projectRoot = \"\";"
+  echo "      targets = (8D1107260486CEB800E47090 /* lua */);"
+  echo "    };"
+  echo "    /* End PBXProject section */"
+  
+  # PBXSourcesBuildPhase section
+  echo "    /* Begin PBXSourcesBuildPhase section */"
+  echo "    8D1107290486CEB800E47090 /* Sources */ = {"
+  echo "      isa = PBXSourcesBuildPhase;"
+  echo "      buildActionMask = 2147483647;"
+  echo "      files = ("
   for file in $SOURCE_FILES; do
-    echo "        $(uuidgen | tr -d - | cut -c1-24) /* $file in Sources */,"
+    echo "        ${FILE_UUIDS[$file]} /* $file in Sources */,"
   done
+  echo "      );"
+  echo "      runOnlyForDeploymentPostprocessing = 0;"
+  echo "    };"
+  echo "    /* End PBXSourcesBuildPhase section */"
+  
+  # XCBuildConfiguration section
+  echo "    /* Begin XCBuildConfiguration section */"
+  echo "    4D7A7B8C0ABF745500C91562 /* Release */ = {"
+  echo "      isa = XCBuildConfiguration;"
+  echo "      buildSettings = {"
+  echo "        ALWAYS_SEARCH_USER_PATHS = NO;"
+  echo "        CLANG_ENABLE_OBJC_ARC = YES;"
+  echo "        COPY_PHASE_STRIP = YES;"
+  echo "        GCC_OPTIMIZATION_LEVEL = 3;"
+  echo "        PRODUCT_NAME = \"\$(TARGET_NAME)\";"
+  echo "        SKIP_INSTALL = NO;"
+  echo "        SUPPORTED_PLATFORMS = \"iphoneos iphonesimulator\";"
+  echo "        SUPPORTS_MACCATALYST = NO;"
+  echo "        SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;"
+  echo "        IPHONEOS_DEPLOYMENT_TARGET = 12.0;"
+  echo "        \"ARCHS[sdk=iphoneos*]\" = arm64;"
+  echo "        \"ARCHS[sdk=iphonesimulator*]\" = \"x86_64 arm64\";"
+  echo "        SDKROOT = iphoneos;"
+  echo "        TARGETED_DEVICE_FAMILY = \"1,2\";"
+  echo "        ENABLE_BITCODE = NO;"
+  echo "        HEADER_SEARCH_PATHS = ("
+  echo "          \"\$(inherited)\","
+  echo "          \"\$(SRCROOT)\","
+  echo "        );"
+  echo "        GCC_PREPROCESSOR_DEFINITIONS = ("
+  echo "          \"\$(inherited)\","
+  echo "          \"LUA_USE_POSIX=1\","
+  echo "        );"
+  echo "        CLANG_ENABLE_MODULES = NO;"
+  echo "        DEAD_CODE_STRIPPING = YES;"
+  echo "        ONLY_ACTIVE_ARCH = NO;"
+  echo "      };"
+  echo "      name = Release;"
+  echo "    };"
+  echo "    /* End XCBuildConfiguration section */"
+  
+  # XCConfigurationList section
+  echo "    /* Begin XCConfigurationList section */"
+  echo "    4D7A7B890ABF745500C91562 /* Build configuration list for PBXProject \"lua\" */ = {"
+  echo "      isa = XCConfigurationList;"
+  echo "      buildConfigurations = (4D7A7B8C0ABF745500C91562 /* Release */);"
+  echo "      defaultConfigurationIsVisible = 0;"
+  echo "      defaultConfigurationName = Release;"
+  echo "    };"
+  echo "    4D7A7B8A0ABF745500C91562 /* Build configuration list for PBXNativeTarget \"lua\" */ = {"
+  echo "      isa = XCConfigurationList;"
+  echo "      buildConfigurations = (4D7A7B8C0ABF745500C91562 /* Release */);"
+  echo "      defaultConfigurationIsVisible = 0;"
+  echo "      defaultConfigurationName = Release;"
+  echo "    };"
+  echo "    /* End XCConfigurationList section */"
+  echo "  };"
+  echo "  rootObject = 29B97313FDCFA39411CA2CEA /* Project object */;"
+  echo "}"
+} > lua.xcodeproj/project.pbxproj
 
-  cat << "EOFEND"
-      );
-      runOnlyForDeploymentPostprocessing = 0;
-    };
-    /* End PBXSourcesBuildPhase section */
-    
-    /* Begin XCBuildConfiguration section */
-    4D7A7B8C0ABF745500C91562 /* Release */ = {
-      isa = XCBuildConfiguration;
-      buildSettings = {
-        ALWAYS_SEARCH_USER_PATHS = NO;
-        CLANG_ENABLE_OBJC_ARC = YES;
-        COPY_PHASE_STRIP = YES;
-        GCC_OPTIMIZATION_LEVEL = 3;
-        PRODUCT_NAME = "$(TARGET_NAME)";
-        SKIP_INSTALL = NO;
-        SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-        SUPPORTS_MACCATALYST = NO;
-        SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
-        IPHONEOS_DEPLOYMENT_TARGET = 12.0;
-        "ARCHS[sdk=iphoneos*]" = arm64;
-        "ARCHS[sdk=iphonesimulator*]" = "x86_64 arm64";
-        SDKROOT = iphoneos;
-        TARGETED_DEVICE_FAMILY = "1,2";
-        ENABLE_BITCODE = NO;
-        HEADER_SEARCH_PATHS = (
-          "$(inherited)",
-          "$(SRCROOT)",
-        );
-        GCC_PREPROCESSOR_DEFINITIONS = (
-          "$(inherited)",
-          "LUA_USE_POSIX=1",
-        );
-      };
-      name = Release;
-    };
-    /* End XCBuildConfiguration section */
-    
-    /* Begin XCConfigurationList section */
-    4D7A7B890ABF745500C91562 /* Build configuration list for PBXProject "lua" */ = {
-      isa = XCConfigurationList;
-      buildConfigurations = (
-        4D7A7B8C0ABF745500C91562 /* Release */,
-      );
-      defaultConfigurationIsVisible = 0;
-      defaultConfigurationName = Release;
-    };
-    4D7A7B8A0ABF745500C91562 /* Build configuration list for PBXNativeTarget "lua" */ = {
-      isa = XCConfigurationList;
-      buildConfigurations = (
-        4D7A7B8C0ABF745500C91562 /* Release */,
-      );
-      defaultConfigurationIsVisible = 0;
-      defaultConfigurationName = Release;
-    };
-    /* End XCConfigurationList section */
-  };
-  rootObject = 29B97313FDCFA39411CA2CEA /* Project object */;
-}
-EOFEND
-} > lua.xcodeproj/project.pbxproj 
+echo "Generated Xcode project at lua.xcodeproj"
+echo "Source files included:"
+echo "$SOURCE_FILES" 
