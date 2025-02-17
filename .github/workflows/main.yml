@@ -91,6 +91,11 @@ jobs:
           CONFIGURATION_BUILD_DIR="$(pwd)/build/Release-iphoneos" \
           SYMROOT="$(pwd)/build" \
           OBJROOT="$(pwd)/build" \
+          SKIP_INSTALL=NO \
+          MACH_O_TYPE=staticlib \
+          EXECUTABLE_PREFIX=lib \
+          EXECUTABLE_EXTENSION=a \
+          PRODUCT_NAME=lua \
           -verbose
         
         echo "Build completed successfully!"
@@ -106,6 +111,8 @@ jobs:
           cp "build/Release-iphoneos/liblua.a" ./liblua.a
         else
           echo "Library file not found in expected location"
+          echo "Checking entire build directory for any .a files:"
+          find build -name "*.a"
           exit 1
         fi
         
