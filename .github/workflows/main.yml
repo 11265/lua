@@ -1,236 +1,72 @@
-name: iOS Static Library Build
+name: Build iOS Static Library
 
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-  workflow_dispatch:
 
 jobs:
   build:
-    name: Build iOS Static Library
     runs-on: macos-13
-    
+
     steps:
-    - uses: actions/checkout@v4
-      
+    - uses: actions/checkout@v2
+    
     - name: Select Xcode
-      run: |
-        sudo xcode-select -switch /Applications/Xcode.app
-        xcodebuild -version
+      run: sudo xcode-select -s /Applications/Xcode.app
       
-    - name: Prepare Build Environment
+    - name: Check Xcode version
+      run: xcodebuild -version
+      
+    - name: Prepare build environment
       run: |
-        set -e
-        echo "Workspace structure:"
-        pwd
-        ls -la
+        cd lua
+        mkdir -p build
+        cd build
+        ln -s ../../lua/*.h .
+        ln -s ../../lua/*.c .
         
-        echo "Creating build directory..."
-        mkdir -p build/lua
-        cd build/lua
-        
-        echo "Current directory: $(pwd)"
-        echo "Parent directory structure:"
-        ls -la ..
-        
-        echo "Repository root structure:"
-        ls -la ../..
-        
-        echo "Checking for source files..."
-        find ../../ -name "*.c" -o -name "*.h"
-        
-        echo "Creating symbolic links for source files..."
-        # First ensure source directory exists
-        if [ ! -d "../../lua" ]; then
-          echo "Source directory not found, checking current directory..."
-          if [ -f "../../lapi.c" ]; then
-            echo "Source files found in repository root"
-            SOURCE_DIR="../.."
-          else
-            echo "Error: Could not locate source files"
-            exit 1
-          fi
-        else
-          echo "Source directory found at ../../lua"
-          SOURCE_DIR="../../lua"
-        fi
-        
-        # Link header files
-        echo "Linking header files..."
-        for file in $SOURCE_DIR/*.h; do
-          if [ -f "$file" ]; then
-            echo "Linking header: $file"
-            ln -sf "$file" .
-          fi
-        done
-        
-        # Link source files
-        echo "Linking source files..."
-        for file in $SOURCE_DIR/*.c; do
-          if [ -f "$file" ] && ! [[ "$file" =~ (lua\.c|onelua\.c|ltests\.c)$ ]]; then
-            echo "Linking source: $file"
-            ln -sf "$file" .
-          fi
-        done
-        
-        echo "Build directory contents:"
-        ls -la
-        echo "Source files to be compiled:"
-        ls -1 *.c | sort
-        echo "Header files available:"
-        ls -1 *.h | sort
-        
-    - name: Create Xcode Project
-      working-directory: build/lua
+    - name: Create Xcode project
       run: |
-        set -e
-        echo "Generating Xcode project..."
+        cd lua/build
         chmod +x ../../.github/workflows/generate-xcodeproj.sh
         ../../.github/workflows/generate-xcodeproj.sh
         
-        echo "Xcode project structure:"
-        ls -la lua.xcodeproj/
-        
-        echo "Project file contents:"
-        cat lua.xcodeproj/project.pbxproj
-        
-    - name: Build Static Library
-      working-directory: build/lua
+    - name: Build static library
       run: |
+        cd lua/build
         set -e
-        
-        # Common build settings
-        COMMON_BUILD_SETTINGS=(
-          ONLY_ACTIVE_ARCH=NO
-          BUILD_FOR_DISTRIBUTION=YES
-          SKIP_INSTALL=NO
-          CODE_SIGNING_REQUIRED=NO
-          CODE_SIGN_IDENTITY=""
-          GCC_OPTIMIZATION_LEVEL=3
-          ENABLE_BITCODE=NO
-          CLANG_ENABLE_OBJC_ARC=YES
-          COPY_PHASE_STRIP=YES
-          SUPPORTS_MACCATALYST=NO
-          IPHONEOS_DEPLOYMENT_TARGET=12.0
-          GCC_PREPROCESSOR_DEFINITIONS="LUA_USE_POSIX=1"
-          HEADER_SEARCH_PATHS="\$(SRCROOT)"
-          VALID_ARCHS="arm64 x86_64"
-          EXCLUDED_SOURCE_FILE_NAMES="lua.c onelua.c ltests.c"
-          CLANG_ENABLE_MODULES=NO
-          DEAD_CODE_STRIPPING=YES
-        )
-        
-        echo "Setting up build directories..."
-        mkdir -p "../Release-iphoneos" "../Release-iphonesimulator" "../build"
-        
         echo "Building for iOS devices (arm64)..."
-        xcodebuild clean build \
-          -project lua.xcodeproj \
-          -target lua \
-          -configuration Release \
-          -sdk iphoneos \
-          BUILD_DIR="../" \
-          CONFIGURATION_BUILD_DIR="../Release-iphoneos" \
-          ARCHS="arm64" \
-          "${COMMON_BUILD_SETTINGS[@]}" \
-          SYMROOT="../build" \
-          -verbose || { 
-            echo "iOS device build failed"
-            echo "Build directory contents:"
-            ls -la "../"
-            echo "Configuration directory contents:"
-            ls -la "../Release-iphoneos" || true
-            echo "Build logs:"
-            find ../ -name "*.log" -exec cat {} \;
-            exit 1
-          }
-        
-        echo "iOS device build output:"
-        ls -la "../Release-iphoneos/"
+        xcodebuild -project lua.xcodeproj -target lua -configuration Release -sdk iphoneos -verbose
         
         echo "Building for iOS Simulator (x86_64, arm64)..."
-        xcodebuild clean build \
-          -project lua.xcodeproj \
-          -target lua \
-          -configuration Release \
-          -sdk iphonesimulator \
-          BUILD_DIR="../" \
-          CONFIGURATION_BUILD_DIR="../Release-iphonesimulator" \
-          ARCHS="x86_64 arm64" \
-          "${COMMON_BUILD_SETTINGS[@]}" \
-          SYMROOT="../build" \
-          -verbose || { 
-            echo "iOS simulator build failed"
-            echo "Build directory contents:"
-            ls -la "../"
-            echo "Configuration directory contents:"
-            ls -la "../Release-iphonesimulator" || true
-            echo "Build logs:"
-            find ../ -name "*.log" -exec cat {} \;
-            exit 1
-          }
+        xcodebuild -project lua.xcodeproj -target lua -configuration Release -sdk iphonesimulator -verbose
         
-        echo "iOS simulator build output:"
-        ls -la "../Release-iphonesimulator/"
+        echo "Checking build outputs..."
+        ls -la build/Release-iphoneos/
+        ls -la build/Release-iphonesimulator/
         
-        # Verify build outputs
-        echo "Verifying build outputs..."
-        if [ ! -f "../Release-iphoneos/liblua.a" ]; then
+        if [ ! -f "build/Release-iphoneos/liblua.a" ]; then
           echo "Error: iOS device library not found"
-          echo "Release-iphoneos contents:"
-          ls -la "../Release-iphoneos/"
-          echo "Build directory contents:"
-          ls -la "../"
-          echo "Build logs:"
-          find ../ -name "*.log" -exec cat {} \;
           exit 1
         fi
         
-        if [ ! -f "../Release-iphonesimulator/liblua.a" ]; then
+        if [ ! -f "build/Release-iphonesimulator/liblua.a" ]; then
           echo "Error: iOS simulator library not found"
-          echo "Release-iphonesimulator contents:"
-          ls -la "../Release-iphonesimulator/"
-          echo "Build directory contents:"
-          ls -la "../"
-          echo "Build logs:"
-          find ../ -name "*.log" -exec cat {} \;
           exit 1
         fi
         
         echo "Creating universal binary..."
         lipo -create \
-          "../Release-iphoneos/liblua.a" \
-          "../Release-iphonesimulator/liblua.a" \
-          -output "../liblua.a" || { 
-            echo "lipo creation failed"
-            echo "Source libraries:"
-            ls -la "../Release-iphoneos/liblua.a" "../Release-iphonesimulator/liblua.a"
-            file "../Release-iphoneos/liblua.a" "../Release-iphonesimulator/liblua.a"
-            exit 1
-          }
+          build/Release-iphoneos/liblua.a \
+          build/Release-iphonesimulator/liblua.a \
+          -output liblua.a
         
-        echo "Verifying universal binary..."
-        if [ ! -f "../liblua.a" ]; then
-          echo "Error: Failed to create universal binary"
-          echo "Build directory contents:"
-          ls -la "../"
-          exit 1
-        fi
+        echo "Build completed successfully!"
         
-        echo "Universal binary details:"
-        ls -la "../liblua.a"
-        file "../liblua.a"
-        lipo -info "../liblua.a"
-        otool -L "../liblua.a" || true
-        nm "../liblua.a" || true
-        
-        echo "Build completed successfully"
-        
-    - name: Upload Artifact
-      uses: actions/upload-artifact@v4
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
       with:
-        name: ios-static-library
-        path: build/liblua.a
-        if-no-files-found: error 
+        name: liblua
+        path: lua/build/liblua.a 
