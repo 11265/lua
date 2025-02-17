@@ -18,36 +18,210 @@ jobs:
     - name: Select Xcode
       run: sudo xcode-select -switch /Applications/Xcode.app
       
-    - name: Build Static Library
+    - name: Prepare Build Environment
       run: |
-        # Create build directory
-        mkdir -p build
+        # Create project directory structure
+        mkdir -p build/lua
+        cd build/lua
         
+        # Create symbolic links for all source files
+        for file in ../../*.{c,h}; do
+          if [ -f "$file" ]; then
+            ln -sf "$file" .
+          fi
+        done
+        
+    - name: Create Xcode Project
+      working-directory: build/lua
+      run: |
+        # Create Xcode project directory
+        mkdir -p lua.xcodeproj
+        
+        # Generate source file list
+        SOURCE_FILES=$(ls *.c | grep -v 'lua.c\|onelua.c\|ltests.c')
+        
+        # Create Xcode project file
+        cat > lua.xcodeproj/project.pbxproj << EOL
+// !$*UTF8*$!
+{
+  archiveVersion = 1;
+  classes = {
+  };
+  objectVersion = 56;
+  objects = {
+    /* Begin PBXBuildFile section */
+$(for file in $SOURCE_FILES; do
+  echo "    $(uuidgen | tr -d - | cut -c1-24) /* $file in Sources */ = {isa = PBXBuildFile; fileRef = $(uuidgen | tr -d - | cut -c1-24) /* $file */; };"
+done)
+    /* End PBXBuildFile section */
+    
+    /* Begin PBXFileReference section */
+$(for file in $SOURCE_FILES; do
+  echo "    $(uuidgen | tr -d - | cut -c1-24) /* $file */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = $file; sourceTree = \"<group>\"; };"
+done)
+    8D1107320486CEB800E47090 /* liblua.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = liblua.a; sourceTree = BUILT_PRODUCTS_DIR; };
+    /* End PBXFileReference section */
+    
+    /* Begin PBXFrameworksBuildPhase section */
+    8D11072E0486CEB800E47090 /* Frameworks */ = {
+      isa = PBXFrameworksBuildPhase;
+      buildActionMask = 2147483647;
+      files = (
+      );
+      runOnlyForDeploymentPostprocessing = 0;
+    };
+    /* End PBXFrameworksBuildPhase section */
+    
+    /* Begin PBXGroup section */
+    29B97314FDCFA39411CA2CEA /* lua */ = {
+      isa = PBXGroup;
+      children = (
+$(for file in $SOURCE_FILES; do
+  echo "        $(uuidgen | tr -d - | cut -c1-24) /* $file */,"
+done)
+      );
+      sourceTree = "<group>";
+    };
+    /* End PBXGroup section */
+    
+    /* Begin PBXNativeTarget section */
+    8D1107260486CEB800E47090 /* lua */ = {
+      isa = PBXNativeTarget;
+      buildConfigurationList = 4D7A7B8A0ABF745500C91562 /* Build configuration list for PBXNativeTarget "lua" */;
+      buildPhases = (
+        8D1107290486CEB800E47090 /* Sources */,
+        8D11072E0486CEB800E47090 /* Frameworks */,
+      );
+      buildRules = (
+      );
+      dependencies = (
+      );
+      name = lua;
+      productName = lua;
+      productReference = 8D1107320486CEB800E47090 /* liblua.a */;
+      productType = "com.apple.product-type.library.static";
+    };
+    /* End PBXNativeTarget section */
+    
+    /* Begin PBXProject section */
+    29B97313FDCFA39411CA2CEA /* Project object */ = {
+      isa = PBXProject;
+      buildConfigurationList = 4D7A7B890ABF745500C91562 /* Build configuration list for PBXProject "lua" */;
+      compatibilityVersion = "Xcode 14.0";
+      developmentRegion = en;
+      hasScannedForEncodings = 1;
+      knownRegions = (
+        en,
+        Base,
+      );
+      mainGroup = 29B97314FDCFA39411CA2CEA /* lua */;
+      productRefGroup = 29B97314FDCFA39411CA2CEA /* lua */;
+      projectDirPath = "";
+      projectRoot = "";
+      targets = (
+        8D1107260486CEB800E47090 /* lua */,
+      );
+    };
+    /* End PBXProject section */
+    
+    /* Begin PBXSourcesBuildPhase section */
+    8D1107290486CEB800E47090 /* Sources */ = {
+      isa = PBXSourcesBuildPhase;
+      buildActionMask = 2147483647;
+      files = (
+$(for file in $SOURCE_FILES; do
+  echo "        $(uuidgen | tr -d - | cut -c1-24) /* $file in Sources */,"
+done)
+      );
+      runOnlyForDeploymentPostprocessing = 0;
+    };
+    /* End PBXSourcesBuildPhase section */
+    
+    /* Begin XCBuildConfiguration section */
+    4D7A7B8C0ABF745500C91562 /* Release */ = {
+      isa = XCBuildConfiguration;
+      buildSettings = {
+        ALWAYS_SEARCH_USER_PATHS = NO;
+        CLANG_ENABLE_OBJC_ARC = YES;
+        COPY_PHASE_STRIP = YES;
+        GCC_OPTIMIZATION_LEVEL = 3;
+        PRODUCT_NAME = "$(TARGET_NAME)";
+        SKIP_INSTALL = NO;
+        SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+        SUPPORTS_MACCATALYST = NO;
+        SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+        IPHONEOS_DEPLOYMENT_TARGET = 12.0;
+        "ARCHS[sdk=iphoneos*]" = arm64;
+        "ARCHS[sdk=iphonesimulator*]" = "x86_64 arm64";
+        SDKROOT = iphoneos;
+        TARGETED_DEVICE_FAMILY = "1,2";
+        ENABLE_BITCODE = NO;
+        HEADER_SEARCH_PATHS = (
+          "$(inherited)",
+          "$(SRCROOT)",
+        );
+        GCC_PREPROCESSOR_DEFINITIONS = (
+          "$(inherited)",
+          "LUA_USE_POSIX=1",
+        );
+      };
+      name = Release;
+    };
+    /* End XCBuildConfiguration section */
+    
+    /* Begin XCConfigurationList section */
+    4D7A7B890ABF745500C91562 /* Build configuration list for PBXProject "lua" */ = {
+      isa = XCConfigurationList;
+      buildConfigurations = (
+        4D7A7B8C0ABF745500C91562 /* Release */,
+      );
+      defaultConfigurationIsVisible = 0;
+      defaultConfigurationName = Release;
+    };
+    4D7A7B8A0ABF745500C91562 /* Build configuration list for PBXNativeTarget "lua" */ = {
+      isa = XCConfigurationList;
+      buildConfigurations = (
+        4D7A7B8C0ABF745500C91562 /* Release */,
+      );
+      defaultConfigurationIsVisible = 0;
+      defaultConfigurationName = Release;
+    };
+    /* End XCConfigurationList section */
+  };
+  rootObject = 29B97313FDCFA39411CA2CEA /* Project object */;
+}
+EOL
+        
+    - name: Build Static Library
+      working-directory: build/lua
+      run: |
         # Build for iOS devices (arm64)
         xcodebuild clean build \
+          -project lua.xcodeproj \
           -configuration Release \
           -sdk iphoneos \
           ONLY_ACTIVE_ARCH=NO \
-          BUILD_DIR="build" \
+          BUILD_DIR="../" \
           BUILD_FOR_DISTRIBUTION=YES \
           ARCHS="arm64" \
           SKIP_INSTALL=NO
           
         # Build for iOS Simulator (x86_64, arm64)
         xcodebuild clean build \
+          -project lua.xcodeproj \
           -configuration Release \
           -sdk iphonesimulator \
           ONLY_ACTIVE_ARCH=NO \
-          BUILD_DIR="build" \
+          BUILD_DIR="../" \
           BUILD_FOR_DISTRIBUTION=YES \
           ARCHS="x86_64 arm64" \
           SKIP_INSTALL=NO
           
         # Create universal binary using lipo
         lipo -create \
-          build/Release-iphoneos/liblua.a \
-          build/Release-iphonesimulator/liblua.a \
-          -output build/liblua.a
+          ../Release-iphoneos/liblua.a \
+          ../Release-iphonesimulator/liblua.a \
+          -output ../liblua.a
           
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
