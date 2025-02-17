@@ -82,7 +82,9 @@ jobs:
           BUILD_FOR_DISTRIBUTION=YES \
           ARCHS="arm64" \
           CODE_SIGNING_REQUIRED=NO \
-          CODE_SIGN_IDENTITY="" || exit 1
+          CODE_SIGN_IDENTITY="" \
+          BUILD_DIR="$(pwd)" \
+          CONFIGURATION_BUILD_DIR="$(pwd)/Release-iphoneos" || exit 1
         
         echo "iOS device build completed. Checking output:"
         ls -la Release-iphoneos/
@@ -97,7 +99,9 @@ jobs:
           BUILD_FOR_DISTRIBUTION=YES \
           ARCHS="x86_64 arm64" \
           CODE_SIGNING_REQUIRED=NO \
-          CODE_SIGN_IDENTITY="" || exit 1
+          CODE_SIGN_IDENTITY="" \
+          BUILD_DIR="$(pwd)" \
+          CONFIGURATION_BUILD_DIR="$(pwd)/Release-iphonesimulator" || exit 1
         
         echo "iOS simulator build completed. Checking output:"
         ls -la Release-iphonesimulator/
