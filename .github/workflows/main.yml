@@ -59,17 +59,11 @@ jobs:
     - name: Build static library
       run: |
         cd build/lua
-        BUILD_ROOT="$(pwd)"
-        echo "Current directory: $BUILD_ROOT"
+        echo "Current directory: $(pwd)"
         set -e
         
-        # Create required build directories with full path structure
-        mkdir -p "$BUILD_ROOT/build/lua.build/Release-iphoneos/lua.build"
-        mkdir -p "$BUILD_ROOT/build/Release-iphoneos"
-        chmod -R 755 "$BUILD_ROOT/build"
-        
         echo "Building for iOS devices (arm64)..."
-        xcodebuild clean build \
+        xcodebuild build \
           -project lua.xcodeproj \
           -target lua \
           -configuration Release \
@@ -79,24 +73,9 @@ jobs:
           ARCHS="arm64" \
           CODE_SIGNING_REQUIRED=NO \
           CODE_SIGN_IDENTITY="" \
-          BUILD_DIR="$BUILD_ROOT/build" \
-          BUILD_ROOT="$BUILD_ROOT/build" \
-          CONFIGURATION_BUILD_DIR="$BUILD_ROOT/build/Release-iphoneos" \
-          CONFIGURATION_TEMP_DIR="$BUILD_ROOT/build/lua.build/Release-iphoneos/lua.build" \
           -verbose
         
-        echo "Checking library file..."
-        DEVICE_LIB="$BUILD_ROOT/build/Release-iphoneos/liblua.a"
-        if [ ! -f "$DEVICE_LIB" ]; then
-          echo "Error: iOS device library not found at $DEVICE_LIB"
-          echo "Current directory: $(pwd)"
-          echo "Directory contents:"
-          ls -R "$BUILD_ROOT/build"
-          exit 1
-        fi
-        
         echo "Build completed successfully!"
-        cp "$DEVICE_LIB" "$BUILD_ROOT/liblua.a"
         ls -la liblua.a
         file liblua.a
         
