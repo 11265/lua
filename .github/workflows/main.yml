@@ -1,0 +1,57 @@
+name: iOS Static Library Build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build iOS Static Library
+    runs-on: macos-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+      
+    - name: Select Xcode
+      run: sudo xcode-select -switch /Applications/Xcode.app
+      
+    - name: Build Static Library
+      run: |
+        # Create build directory
+        mkdir -p build
+        
+        # Build for iOS devices (arm64)
+        xcodebuild clean build \
+          -configuration Release \
+          -sdk iphoneos \
+          ONLY_ACTIVE_ARCH=NO \
+          BUILD_DIR="build" \
+          BUILD_FOR_DISTRIBUTION=YES \
+          ARCHS="arm64" \
+          SKIP_INSTALL=NO
+          
+        # Build for iOS Simulator (x86_64, arm64)
+        xcodebuild clean build \
+          -configuration Release \
+          -sdk iphonesimulator \
+          ONLY_ACTIVE_ARCH=NO \
+          BUILD_DIR="build" \
+          BUILD_FOR_DISTRIBUTION=YES \
+          ARCHS="x86_64 arm64" \
+          SKIP_INSTALL=NO
+          
+        # Create universal binary using lipo
+        lipo -create \
+          build/Release-iphoneos/liblua.a \
+          build/Release-iphonesimulator/liblua.a \
+          -output build/liblua.a
+          
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: ios-static-library
+        path: build/liblua.a
+        if-no-files-found: error 
