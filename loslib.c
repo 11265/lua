@@ -130,13 +130,9 @@
 /* }================================================================== */
 
 
-#if !defined(l_system)
 #if defined(LUA_USE_IOS)
-/* Despite claiming to be ISO C, iOS does not implement 'system'. */
-#define l_system(cmd) ((cmd) == NULL ? 0 : -1)
-#else
-#define l_system(cmd)	system(cmd)  /* default definition */
-#endif
+#undef l_system  /* undef defaults */
+#define l_system(cmd)  (-1)  /* iOS doesn't support system() */
 #endif
 
 
