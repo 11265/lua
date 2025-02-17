@@ -7,14 +7,6 @@ mkdir -p lua.xcodeproj
 # Generate source file list
 SOURCE_FILES=$(ls *.c | grep -v 'lua\.c\|onelua\.c\|ltests\.c')
 
-# Create unique UUIDs for each file
-declare -A FILE_UUIDS
-declare -A FILE_REF_UUIDS
-for file in $SOURCE_FILES; do
-  FILE_UUIDS[$file]=$(uuidgen | tr -d - | cut -c1-24)
-  FILE_REF_UUIDS[$file]=$(uuidgen | tr -d - | cut -c1-24)
-done
-
 # Create project file
 {
   echo "// !$*UTF8*$!"
@@ -27,15 +19,16 @@ done
   # PBXBuildFile section
   echo "    /* Begin PBXBuildFile section */"
   for file in $SOURCE_FILES; do
-    echo "    ${FILE_UUIDS[$file]} /* $file in Sources */ = {isa = PBXBuildFile; fileRef = ${FILE_REF_UUIDS[$file]} /* $file */; };"
+    build_uuid=$(uuidgen | tr -d - | cut -c1-24)
+    ref_uuid=$(uuidgen | tr -d - | cut -c1-24)
+    echo "    $build_uuid /* $file in Sources */ = {isa = PBXBuildFile; fileRef = $ref_uuid /* $file */; };"
+    echo "    $ref_uuid /* $file */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = $file; sourceTree = \"<group>\"; };"
+    echo "REF_UUID_$file=$ref_uuid" >> /tmp/uuids.txt
   done
   echo "    /* End PBXBuildFile section */"
   
   # PBXFileReference section
   echo "    /* Begin PBXFileReference section */"
-  for file in $SOURCE_FILES; do
-    echo "    ${FILE_REF_UUIDS[$file]} /* $file */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = $file; sourceTree = \"<group>\"; };"
-  done
   echo "    8D1107320486CEB800E47090 /* liblua.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = liblua.a; sourceTree = BUILT_PRODUCTS_DIR; };"
   echo "    /* End PBXFileReference section */"
   
@@ -55,7 +48,8 @@ done
   echo "      isa = PBXGroup;"
   echo "      children = ("
   for file in $SOURCE_FILES; do
-    echo "        ${FILE_REF_UUIDS[$file]} /* $file */,"
+    ref_uuid=$(grep "REF_UUID_$file" /tmp/uuids.txt | cut -d= -f2)
+    echo "        $ref_uuid /* $file */,"
   done
   echo "        8D1107320486CEB800E47090 /* liblua.a */,"
   echo "      );"
@@ -105,7 +99,9 @@ done
   echo "      buildActionMask = 2147483647;"
   echo "      files = ("
   for file in $SOURCE_FILES; do
-    echo "        ${FILE_UUIDS[$file]} /* $file in Sources */,"
+    build_uuid=$(uuidgen | tr -d - | cut -c1-24)
+    ref_uuid=$(grep "REF_UUID_$file" /tmp/uuids.txt | cut -d= -f2)
+    echo "        $build_uuid /* $file in Sources */,"
   done
   echo "      );"
   echo "      runOnlyForDeploymentPostprocessing = 0;"
@@ -167,6 +163,8 @@ done
   echo "  rootObject = 29B97313FDCFA39411CA2CEA /* Project object */;"
   echo "}"
 } > lua.xcodeproj/project.pbxproj
+
+rm -f /tmp/uuids.txt
 
 echo "Generated Xcode project at lua.xcodeproj"
 echo "Source files included:"
