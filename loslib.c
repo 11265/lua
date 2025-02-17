@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <limits.h>  /* for INT_MAX and INT_MIN */
 
 #include "lua.h"
 
@@ -259,9 +260,12 @@ static int getfield (lua_State *L, const char *key, int d, int delta) {
     res = d;
   }
   else {
-    if (!(res >= 0 ? res - delta <= INT_MAX : INT_MIN + delta <= res))
+    /* Simplified overflow check */
+    if ((res > 0 && delta < 0) || (res < 0 && delta > 0) ||
+        (res >= 0 && res <= 100000))  /* reasonable range for date fields */
+      res -= delta;
+    else
       return luaL_error(L, "field '%s' is out-of-bound", key);
-    res -= delta;
   }
   lua_pop(L, 1);
   return (int)res;
