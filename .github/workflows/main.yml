@@ -52,7 +52,8 @@ jobs:
           ARCHS="arm64" \
           SKIP_INSTALL=NO \
           CODE_SIGNING_REQUIRED=NO \
-          CODE_SIGN_IDENTITY="" || exit 1
+          CODE_SIGN_IDENTITY="" \
+          CONFIGURATION_BUILD_DIR="../Release-iphoneos" || exit 1
           
         echo "Building for iOS Simulator (x86_64, arm64)..."
         xcodebuild clean build \
@@ -65,23 +66,26 @@ jobs:
           ARCHS="x86_64 arm64" \
           SKIP_INSTALL=NO \
           CODE_SIGNING_REQUIRED=NO \
-          CODE_SIGN_IDENTITY="" || exit 1
+          CODE_SIGN_IDENTITY="" \
+          CONFIGURATION_BUILD_DIR="../Release-iphonesimulator" || exit 1
           
         echo "Creating universal binary..."
         if [ ! -f "../Release-iphoneos/liblua.a" ]; then
           echo "Error: iOS device library not found"
+          ls -la "../Release-iphoneos/"
           exit 1
         fi
         
         if [ ! -f "../Release-iphonesimulator/liblua.a" ]; then
           echo "Error: iOS simulator library not found"
+          ls -la "../Release-iphonesimulator/"
           exit 1
         fi
         
         lipo -create \
-          ../Release-iphoneos/liblua.a \
-          ../Release-iphonesimulator/liblua.a \
-          -output ../liblua.a
+          "../Release-iphoneos/liblua.a" \
+          "../Release-iphonesimulator/liblua.a" \
+          -output "../liblua.a"
           
         if [ ! -f "../liblua.a" ]; then
           echo "Error: Failed to create universal binary"
