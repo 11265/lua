@@ -30,14 +30,14 @@ jobs:
         ls -la ../..
         echo "Creating symbolic links for source files..."
         # First, create links for all .h files
-        for file in ../../*.h; do
+        for file in ../../lua/*.h; do
           if [ -f "$file" ]; then
             echo "Linking header: $file"
             ln -sf "$file" .
           fi
         done
         # Then, create links for .c files, excluding specific ones
-        for file in ../../*.c; do
+        for file in ../../lua/*.c; do
           if [ -f "$file" ] && ! [[ "$file" =~ (lua\.c|onelua\.c|ltests\.c)$ ]]; then
             echo "Linking source: $file"
             ln -sf "$file" .
@@ -77,18 +77,31 @@ jobs:
           SUPPORTS_MACCATALYST=NO
           IPHONEOS_DEPLOYMENT_TARGET=12.0
           GCC_PREPROCESSOR_DEFINITIONS="LUA_USE_POSIX=1"
+          HEADER_SEARCH_PATHS="\$(SRCROOT)"
+          VALID_ARCHS="arm64 x86_64"
+          EXCLUDED_SOURCE_FILE_NAMES="lua.c onelua.c ltests.c"
         )
         
         echo "Building for iOS devices (arm64)..."
         mkdir -p "../Release-iphoneos"
         xcodebuild clean build \
           -project lua.xcodeproj \
+          -target lua \
           -configuration Release \
           -sdk iphoneos \
           BUILD_DIR="../" \
           CONFIGURATION_BUILD_DIR="../Release-iphoneos" \
           ARCHS="arm64" \
-          "${COMMON_BUILD_SETTINGS[@]}" || { echo "iOS device build failed"; exit 1; }
+          "${COMMON_BUILD_SETTINGS[@]}" \
+          SYMROOT="../build" \
+          -verbose || { 
+            echo "iOS device build failed"
+            echo "Build directory contents:"
+            ls -la "../"
+            echo "Configuration directory contents:"
+            ls -la "../Release-iphoneos" || true
+            exit 1
+          }
         
         echo "Checking iOS device build output:"
         ls -la "../Release-iphoneos/"
@@ -97,12 +110,22 @@ jobs:
         mkdir -p "../Release-iphonesimulator"
         xcodebuild clean build \
           -project lua.xcodeproj \
+          -target lua \
           -configuration Release \
           -sdk iphonesimulator \
           BUILD_DIR="../" \
           CONFIGURATION_BUILD_DIR="../Release-iphonesimulator" \
           ARCHS="x86_64 arm64" \
-          "${COMMON_BUILD_SETTINGS[@]}" || { echo "iOS simulator build failed"; exit 1; }
+          "${COMMON_BUILD_SETTINGS[@]}" \
+          SYMROOT="../build" \
+          -verbose || { 
+            echo "iOS simulator build failed"
+            echo "Build directory contents:"
+            ls -la "../"
+            echo "Configuration directory contents:"
+            ls -la "../Release-iphonesimulator" || true
+            exit 1
+          }
         
         echo "Checking iOS simulator build output:"
         ls -la "../Release-iphonesimulator/"
@@ -111,12 +134,16 @@ jobs:
         if [ ! -f "../Release-iphoneos/liblua.a" ]; then
           echo "Error: iOS device library not found in:"
           ls -la "../Release-iphoneos/"
+          echo "Build directory contents:"
+          ls -la "../"
           exit 1
         fi
         
         if [ ! -f "../Release-iphonesimulator/liblua.a" ]; then
           echo "Error: iOS simulator library not found in:"
           ls -la "../Release-iphonesimulator/"
+          echo "Build directory contents:"
+          ls -la "../"
           exit 1
         fi
         
@@ -124,11 +151,18 @@ jobs:
         lipo -create \
           "../Release-iphoneos/liblua.a" \
           "../Release-iphonesimulator/liblua.a" \
-          -output "../liblua.a" || { echo "lipo creation failed"; exit 1; }
+          -output "../liblua.a" || { 
+            echo "lipo creation failed"
+            echo "Source libraries:"
+            ls -la "../Release-iphoneos/liblua.a" "../Release-iphonesimulator/liblua.a"
+            exit 1
+          }
         
         echo "Verifying universal binary:"
         if [ ! -f "../liblua.a" ]; then
           echo "Error: Failed to create universal binary"
+          echo "Build directory contents:"
+          ls -la "../"
           exit 1
         fi
         
@@ -136,6 +170,7 @@ jobs:
         ls -la "../liblua.a"
         file "../liblua.a"
         lipo -info "../liblua.a"
+        otool -l "../liblua.a" || true
         
         echo "Build completed successfully"
         
