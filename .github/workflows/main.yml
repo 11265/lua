@@ -26,12 +26,12 @@ jobs:
         pwd
         ls -la
         echo "Creating build directory..."
-        mkdir -p build/lua
-        cd build/lua
+        mkdir -p build
+        cd build
         echo "Current directory: $(pwd)"
         
         echo "Linking source files..."
-        for file in ../../lua/*.h ../../lua/*.c; do
+        for file in ../*.h ../*.c; do
           if [ -f "$file" ]; then
             echo "Linking: $file"
             ln -sf "$file" .
@@ -43,17 +43,17 @@ jobs:
         
     - name: Create Xcode project
       run: |
-        cd build/lua
+        cd build
         echo "Current directory: $(pwd)"
-        chmod +x ../../generate-xcodeproj.sh
-        ../../generate-xcodeproj.sh
+        chmod +x ../generate-xcodeproj.sh
+        ../generate-xcodeproj.sh
         
         echo "Xcode project contents:"
         ls -la lua.xcodeproj/
         
     - name: Build static library
       run: |
-        cd build/lua
+        cd build
         echo "Current directory: $(pwd)"
         set -e
         
@@ -98,5 +98,5 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: ios-static-library
-        path: build/lua/liblua.a
+        path: build/liblua.a
         if-no-files-found: error 
