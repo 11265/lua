@@ -73,11 +73,6 @@ jobs:
         
         echo "Building for iOS devices (arm64)..."
         
-        # Create and mark build directory as Xcode-managed
-        rm -rf build
-        mkdir -p build/Release-iphoneos
-        xattr -w com.apple.xcode.CreatedByBuildSystem true build
-        
         xcodebuild build \
           -project lua.xcodeproj \
           -target lua \
@@ -88,14 +83,6 @@ jobs:
           ARCHS="arm64" \
           CODE_SIGNING_REQUIRED=NO \
           CODE_SIGN_IDENTITY="" \
-          CONFIGURATION_BUILD_DIR="$(pwd)/build/Release-iphoneos" \
-          SYMROOT="$(pwd)/build" \
-          OBJROOT="$(pwd)/build" \
-          SKIP_INSTALL=NO \
-          MACH_O_TYPE=staticlib \
-          EXECUTABLE_PREFIX=lib \
-          EXECUTABLE_EXTENSION=a \
-          PRODUCT_NAME=lua \
           -verbose
         
         echo "Build completed successfully!"
@@ -112,7 +99,7 @@ jobs:
         else
           echo "Library file not found in expected location"
           echo "Checking entire build directory for any .a files:"
-          find build -name "*.a"
+          find . -name "*.a"
           exit 1
         fi
         
