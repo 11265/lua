@@ -64,9 +64,14 @@ jobs:
           -configuration Release \
           -sdk iphoneos \
           ONLY_ACTIVE_ARCH=NO \
-          BUILD_DIR="$(pwd)/build" \
-          CONFIGURATION_BUILD_DIR="$(pwd)/build/Release-iphoneos" \
+          BUILD_DIR="./" \
+          BUILD_ROOT="./" \
+          SYMROOT="./" \
+          OBJROOT="./" \
+          CONFIGURATION_BUILD_DIR="./Release-iphoneos" \
           ARCHS="arm64" \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGN_IDENTITY="" \
           -verbose
         
         echo "Building for iOS Simulator (x86_64, arm64)..."
@@ -76,19 +81,24 @@ jobs:
           -configuration Release \
           -sdk iphonesimulator \
           ONLY_ACTIVE_ARCH=NO \
-          BUILD_DIR="$(pwd)/build" \
-          CONFIGURATION_BUILD_DIR="$(pwd)/build/Release-iphonesimulator" \
+          BUILD_DIR="./" \
+          BUILD_ROOT="./" \
+          SYMROOT="./" \
+          OBJROOT="./" \
+          CONFIGURATION_BUILD_DIR="./Release-iphonesimulator" \
           ARCHS="x86_64 arm64" \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGN_IDENTITY="" \
           -verbose
         
         echo "Checking build outputs..."
-        ls -la build/Release-iphoneos/
-        ls -la build/Release-iphonesimulator/
+        ls -la Release-iphoneos/
+        ls -la Release-iphonesimulator/
         
         echo "Creating universal binary..."
         lipo -create \
-          build/Release-iphoneos/liblua.a \
-          build/Release-iphonesimulator/liblua.a \
+          Release-iphoneos/liblua.a \
+          Release-iphonesimulator/liblua.a \
           -output liblua.a
         
         echo "Build completed successfully!"
