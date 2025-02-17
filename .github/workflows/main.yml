@@ -10,13 +10,15 @@ on:
 jobs:
   build:
     name: Build iOS Static Library
-    runs-on: macos-latest
+    runs-on: macos-13
     
     steps:
     - uses: actions/checkout@v4
       
     - name: Select Xcode
-      run: sudo xcode-select -switch /Applications/Xcode.app
+      run: |
+        sudo xcode-select -switch /Applications/Xcode.app
+        xcodebuild -version
       
     - name: Prepare Build Environment
       run: |
@@ -195,7 +197,9 @@ EOL
     - name: Build Static Library
       working-directory: build/lua
       run: |
-        # Build for iOS devices (arm64)
+        set -e
+        
+        echo "Building for iOS devices (arm64)..."
         xcodebuild clean build \
           -project lua.xcodeproj \
           -configuration Release \
@@ -204,9 +208,11 @@ EOL
           BUILD_DIR="../" \
           BUILD_FOR_DISTRIBUTION=YES \
           ARCHS="arm64" \
-          SKIP_INSTALL=NO
+          SKIP_INSTALL=NO \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGN_IDENTITY="" || exit 1
           
-        # Build for iOS Simulator (x86_64, arm64)
+        echo "Building for iOS Simulator (x86_64, arm64)..."
         xcodebuild clean build \
           -project lua.xcodeproj \
           -configuration Release \
@@ -215,14 +221,33 @@ EOL
           BUILD_DIR="../" \
           BUILD_FOR_DISTRIBUTION=YES \
           ARCHS="x86_64 arm64" \
-          SKIP_INSTALL=NO
+          SKIP_INSTALL=NO \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGN_IDENTITY="" || exit 1
           
-        # Create universal binary using lipo
+        echo "Creating universal binary..."
+        if [ ! -f "../Release-iphoneos/liblua.a" ]; then
+          echo "Error: iOS device library not found"
+          exit 1
+        fi
+        
+        if [ ! -f "../Release-iphonesimulator/liblua.a" ]; then
+          echo "Error: iOS simulator library not found"
+          exit 1
+        fi
+        
         lipo -create \
           ../Release-iphoneos/liblua.a \
           ../Release-iphonesimulator/liblua.a \
           -output ../liblua.a
           
+        if [ ! -f "../liblua.a" ]; then
+          echo "Error: Failed to create universal binary"
+          exit 1
+        fi
+        
+        echo "Build completed successfully"
+        
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
