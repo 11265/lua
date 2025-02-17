@@ -6,6 +6,7 @@ mkdir -p lua.xcodeproj
 
 # Generate source file list
 SOURCE_FILES=$(ls *.c | grep -v 'lua\.c\|onelua\.c\|ltests\.c')
+echo "Source files to be included: $SOURCE_FILES"
 
 # Create project file
 cat > lua.xcodeproj/project.pbxproj << 'EOL'
@@ -24,6 +25,7 @@ for file in $SOURCE_FILES; do
     build_uuid=$(uuidgen | tr -d - | cut -c1-24)
     ref_uuid=$(uuidgen | tr -d - | cut -c1-24)
     echo "		$build_uuid /* $file in Sources */ = {isa = PBXBuildFile; fileRef = $ref_uuid /* $file */; };" >> lua.xcodeproj/project.pbxproj
+    echo "BUILD_UUID_$file=$build_uuid" >> /tmp/uuids.txt
     echo "REF_UUID_$file=$ref_uuid" >> /tmp/uuids.txt
 done
 echo "/* End PBXBuildFile section */" >> lua.xcodeproj/project.pbxproj
@@ -32,7 +34,7 @@ echo "/* End PBXBuildFile section */" >> lua.xcodeproj/project.pbxproj
 echo "/* Begin PBXFileReference section */" >> lua.xcodeproj/project.pbxproj
 for file in $SOURCE_FILES; do
     ref_uuid=$(grep "REF_UUID_$file" /tmp/uuids.txt | cut -d= -f2)
-    echo "		$ref_uuid /* $file */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = $file; sourceTree = \"<group>\"; };" >> lua.xcodeproj/project.pbxproj
+    echo "		$ref_uuid /* $file */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = $file; path = $file; sourceTree = \"<group>\"; };" >> lua.xcodeproj/project.pbxproj
 done
 echo "		8D1107320486CEB800E47090 /* liblua.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = liblua.a; sourceTree = BUILT_PRODUCTS_DIR; };" >> lua.xcodeproj/project.pbxproj
 echo "/* End PBXFileReference section */" >> lua.xcodeproj/project.pbxproj
@@ -55,6 +57,7 @@ cat >> lua.xcodeproj/project.pbxproj << 'EOL'
 				29B97315FDCFA39411CA2CEA /* Sources */,
 				19C28FACFE9D520D11CA2CBB /* Products */,
 			);
+			name = lua;
 			sourceTree = "<group>";
 		};
 		29B97315FDCFA39411CA2CEA /* Sources */ = {
@@ -70,6 +73,7 @@ done
 
 cat >> lua.xcodeproj/project.pbxproj << 'EOL'
 			);
+			name = Sources;
 			sourceTree = "<group>";
 		};
 		19C28FACFE9D520D11CA2CBB /* Products */ = {
@@ -77,6 +81,7 @@ cat >> lua.xcodeproj/project.pbxproj << 'EOL'
 			children = (
 				8D1107320486CEB800E47090 /* liblua.a */,
 			);
+			name = Products;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -103,6 +108,9 @@ cat >> lua.xcodeproj/project.pbxproj << 'EOL'
 /* Begin PBXProject section */
 		29B97313FDCFA39411CA2CEA /* Project object */ = {
 			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 1420;
+			};
 			buildConfigurationList = 4D7A7B890ABF745500C91562 /* Build configuration list for PBXProject "lua" */;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
@@ -130,8 +138,7 @@ EOL
 
 # Add source files to PBXSourcesBuildPhase
 for file in $SOURCE_FILES; do
-    build_uuid=$(uuidgen | tr -d - | cut -c1-24)
-    ref_uuid=$(grep "REF_UUID_$file" /tmp/uuids.txt | cut -d= -f2)
+    build_uuid=$(grep "BUILD_UUID_$file" /tmp/uuids.txt | cut -d= -f2)
     echo "				$build_uuid /* $file in Sources */," >> lua.xcodeproj/project.pbxproj
 done
 
@@ -146,9 +153,16 @@ cat >> lua.xcodeproj/project.pbxproj << 'EOL'
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ENABLE_OBJC_ARC = NO;
 				COPY_PHASE_STRIP = NO;
+				ENABLE_NS_ASSERTIONS = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"LUA_USE_POSIX=1",
+				);
 				PRODUCT_NAME = lua;
 				EXECUTABLE_PREFIX = lib;
 				EXECUTABLE_EXTENSION = a;
@@ -158,27 +172,16 @@ cat >> lua.xcodeproj/project.pbxproj << 'EOL'
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
-				"ARCHS[sdk=iphoneos*]" = arm64;
-				"ARCHS[sdk=iphonesimulator*]" = "x86_64 arm64";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
+				ARCHS = "arm64";
+				VALID_ARCHS = "arm64";
+				ONLY_ACTIVE_ARCH = NO;
 				ENABLE_BITCODE = NO;
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(SRCROOT)",
 				);
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					"$(inherited)",
-					"LUA_USE_POSIX=1",
-				);
-				CLANG_ENABLE_MODULES = NO;
-				DEAD_CODE_STRIPPING = YES;
-				ONLY_ACTIVE_ARCH = NO;
-				DEPLOYMENT_LOCATION = NO;
-				STRIP_INSTALLED_PRODUCT = NO;
-				GENERATE_MASTER_OBJECT_FILE = NO;
-				LINK_WITH_STANDARD_LIBRARIES = YES;
-				COMBINE_HIDPI_IMAGES = NO;
 				LIBRARY_STYLE = STATIC;
 				CONFIGURATION_BUILD_DIR = "$(SYMROOT)/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)";
 				TARGET_BUILD_DIR = "$(SYMROOT)/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)";
@@ -189,62 +192,19 @@ cat >> lua.xcodeproj/project.pbxproj << 'EOL'
 				INSTALL_PATH = "";
 				PUBLIC_HEADERS_FOLDER_PATH = "include";
 				DSTROOT = "$(SRCROOT)/build";
-				SKIP_INSTALL = NO;
-				COPY_PHASE_STRIP = NO;
+				DEPLOYMENT_LOCATION = NO;
+				STRIP_INSTALLED_PRODUCT = NO;
 				STRIP_STYLE = "non-global";
-				STRIP_SWIFT_SYMBOLS = NO;
-				PRESERVE_DEAD_CODE_INITS_AND_TERMS = YES;
-				SEPARATE_STRIP = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu11;
-				CLANG_ENABLE_OBJC_WEAK = NO;
-				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
-				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
-				CLANG_WARN_EMPTY_BODY = YES;
-				CLANG_WARN_BOOL_CONVERSION = YES;
-				CLANG_WARN_CONSTANT_CONVERSION = YES;
-				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
-				CLANG_WARN_ENUM_CONVERSION = YES;
-				CLANG_WARN_INT_CONVERSION = YES;
-				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
-				CLANG_WARN_INFINITE_RECURSION = YES;
-				GCC_WARN_ABOUT_RETURN_TYPE = YES;
-				GCC_WARN_UNINITIALIZED_AUTOS = YES;
-				CLANG_WARN_UNREACHABLE_CODE = YES;
-				GCC_WARN_UNUSED_FUNCTION = YES;
-				GCC_WARN_UNUSED_VARIABLE = YES;
-				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				GCC_NO_COMMON_BLOCKS = YES;
-				ENABLE_TESTABILITY = NO;
-				VALIDATE_PRODUCT = YES;
-				GCC_ENABLE_OBJC_EXCEPTIONS = NO;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
-				CLANG_CXX_LIBRARY = "libc++";
-				GCC_ENABLE_CPP_EXCEPTIONS = NO;
-				GCC_ENABLE_CPP_RTTI = NO;
-				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
-				GCC_INLINES_ARE_PRIVATE_EXTERN = YES;
-				GCC_ENABLE_BUILTIN_FUNCTIONS = YES;
-				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_NO_COMMON_BLOCKS = YES;
-				CLANG_ENABLE_OBJC_ARC = NO;
-				ENABLE_NS_ASSERTIONS = NO;
-				MTL_ENABLE_DEBUG_INFO = NO;
-				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				VALID_ARCHS = "arm64";
-				EXCLUDED_ARCHS = "";
-				TARGETED_DEVICE_FAMILY = "1,2";
-				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
-				SDKROOT = iphoneos;
-				ARCHS = "arm64";
+				GENERATE_MASTER_OBJECT_FILE = NO;
+				LINK_WITH_STANDARD_LIBRARIES = YES;
+				CLANG_ENABLE_MODULES = NO;
+				DEFINES_MODULE = NO;
 				CURRENT_PROJECT_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				PRODUCT_BUNDLE_IDENTIFIER = "org.lua.lua";
 				PRODUCT_MODULE_NAME = "lua";
 				PRODUCT_MODULE_VERSION = 1;
-				MODULEMAP_FILE = "";
-				DEFINES_MODULE = NO;
 			};
 			name = Release;
 		};
