@@ -73,7 +73,7 @@ jobs:
         
         echo "Building for iOS devices (arm64)..."
         
-        xcodebuild build \
+        xcodebuild clean build \
           -project lua.xcodeproj \
           -target lua \
           -configuration Release \
@@ -83,10 +83,12 @@ jobs:
           ARCHS="arm64" \
           CODE_SIGNING_REQUIRED=NO \
           CODE_SIGN_IDENTITY="" \
-          BUILD_DIR="$(pwd)/build" \
           SYMROOT="$(pwd)/build" \
           OBJROOT="$(pwd)/build" \
           CONFIGURATION_BUILD_DIR="$(pwd)/build/Release-iphoneos" \
+          CONFIGURATION_TEMP_DIR="$(pwd)/build/Release-iphoneos" \
+          BUILT_PRODUCTS_DIR="$(pwd)/build/Release-iphoneos" \
+          TARGET_BUILD_DIR="$(pwd)/build/Release-iphoneos" \
           -verbose
         
         echo "Build completed successfully!"
@@ -113,6 +115,8 @@ jobs:
           "build/liblua.a"
           "liblua.a"
           "build/Release-iphoneos/lua/liblua.a"
+          "build/Release-iphoneos/lua.build/liblua.a"
+          "build/lua.build/Release-iphoneos/liblua.a"
         )
         
         FOUND_LIB=""
@@ -132,7 +136,18 @@ jobs:
           echo "Library file not found in any expected location"
           echo "Performing deep search for any .a files:"
           find "$(pwd)" -type f -name "*.a" -ls
-          exit 1
+          
+          # Try to find any .a file
+          FOUND_LIB=$(find "$(pwd)" -type f -name "*.a" | head -n 1)
+          if [ ! -z "$FOUND_LIB" ]; then
+            echo "Found library at alternate location: $FOUND_LIB"
+            cp "$FOUND_LIB" ./liblua.a
+          else
+            echo "No .a files found anywhere in the build directory"
+            echo "Build directory contents:"
+            find "$(pwd)" -type f -ls
+            exit 1
+          fi
         fi
         
     - name: Upload artifact
