@@ -81,6 +81,7 @@ jobs:
           ARCHS="arm64" \
           CODE_SIGNING_REQUIRED=NO \
           CODE_SIGN_IDENTITY="" \
+          BUILD_DIR="$(pwd)" \
           CONFIGURATION_BUILD_DIR="$(pwd)/Release-iphoneos" \
           SYMROOT="$(pwd)" \
           OBJROOT="$(pwd)" || exit 1
@@ -96,6 +97,7 @@ jobs:
           ARCHS="x86_64 arm64" \
           CODE_SIGNING_REQUIRED=NO \
           CODE_SIGN_IDENTITY="" \
+          BUILD_DIR="$(pwd)" \
           CONFIGURATION_BUILD_DIR="$(pwd)/Release-iphonesimulator" \
           SYMROOT="$(pwd)" \
           OBJROOT="$(pwd)" || exit 1
