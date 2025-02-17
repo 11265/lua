@@ -85,34 +85,30 @@ jobs:
           -verbose
         
         echo "Finding library files..."
-        DEVICE_LIB=""
-        SIMULATOR_LIB=""
+        DEVICE_LIB="build/Release-iphoneos/liblua.a"
+        SIMULATOR_LIB="build/Release-iphonesimulator/liblua.a"
         
-        # Single traversal to find both libraries
-        find . -name "liblua.a" -type f | while read -r lib; do
-          if [ -f "$lib" ]; then
-            file_info=$(file "$lib")
-            echo "Found library: $lib"
-            echo "File info: $file_info"
-            
-            if echo "$file_info" | grep -q "arm64" && ! echo "$file_info" | grep -q "x86_64"; then
-              DEVICE_LIB="$lib"
-              echo "✓ This is the device library (arm64)"
-            elif echo "$file_info" | grep -q "x86_64"; then
-              SIMULATOR_LIB="$lib"
-              echo "✓ This is the simulator library (x86_64)"
-            fi
-          fi
-        done
+        # Check if both libraries exist
+        if [ ! -f "$DEVICE_LIB" ]; then
+          echo "Error: iOS device library not found at $DEVICE_LIB"
+          echo "Current directory: $(pwd)"
+          echo "Directory contents:"
+          ls -R build/
+          exit 1
+        fi
         
-        if [ -z "$DEVICE_LIB" ] || [ -z "$SIMULATOR_LIB" ]; then
-          echo "Error: Could not find both device and simulator libraries"
-          echo "Device library: $DEVICE_LIB"
-          echo "Simulator library: $SIMULATOR_LIB"
+        if [ ! -f "$SIMULATOR_LIB" ]; then
+          echo "Error: iOS simulator library not found at $SIMULATOR_LIB"
+          echo "Current directory: $(pwd)"
+          echo "Directory contents:"
+          ls -R build/
           exit 1
         fi
         
         echo "Creating universal binary..."
+        echo "Device library: $DEVICE_LIB"
+        echo "Simulator library: $SIMULATOR_LIB"
+        
         lipo -create "$DEVICE_LIB" "$SIMULATOR_LIB" -output liblua.a
         
         echo "Build completed successfully!"
