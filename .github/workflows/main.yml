@@ -45,8 +45,8 @@ jobs:
       run: |
         cd build/lua
         echo "Current directory: $(pwd)"
-        chmod +x ../../lua/generate-xcodeproj.sh
-        ../../lua/generate-xcodeproj.sh
+        chmod +x ../../generate-xcodeproj.sh
+        ../../generate-xcodeproj.sh
         
         echo "Xcode project contents:"
         ls -la lua.xcodeproj/
