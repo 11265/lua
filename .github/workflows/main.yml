@@ -83,9 +83,10 @@ jobs:
           ARCHS="arm64" \
           CODE_SIGNING_REQUIRED=NO \
           CODE_SIGN_IDENTITY="" \
-          CONFIGURATION_BUILD_DIR="$(pwd)/build/Release-iphoneos" \
+          BUILD_DIR="$(pwd)/build" \
           SYMROOT="$(pwd)/build" \
           OBJROOT="$(pwd)/build" \
+          CONFIGURATION_BUILD_DIR="$(pwd)/build/Release-iphoneos" \
           -verbose
         
         echo "Build completed successfully!"
@@ -95,29 +96,43 @@ jobs:
         echo "Current directory contents:"
         ls -la
         
-        echo "Checking Release-iphoneos directory:"
+        echo "Checking all possible library locations:"
+        echo "1. Checking Release-iphoneos directory:"
+        ls -la build/Release-iphoneos || true
+        echo "2. Checking direct build directory:"
+        ls -la build || true
+        echo "3. Checking build/Release-iphoneos directory:"
         ls -la build/Release-iphoneos || true
         
-        echo "Checking for library file:"
-        find . -type f -name "*.a" -ls
+        echo "Searching for .a files:"
+        find "$(pwd)" -type f -name "*.a" -ls
         
-        if [ -f "build/Release-iphoneos/liblua.a" ]; then
-          echo "Library file found!"
-          file "build/Release-iphoneos/liblua.a"
-          cp "build/Release-iphoneos/liblua.a" ./liblua.a
-        else
-          echo "Library file not found in expected location"
-          echo "Checking entire build directory for any .a files:"
-          find . -type f -name "*.a" -ls
-          
-          # Try to find the library in alternate locations
-          FOUND_LIB=$(find . -type f -name "liblua.a" | head -n 1)
-          if [ ! -z "$FOUND_LIB" ]; then
-            echo "Found library at alternate location: $FOUND_LIB"
-            cp "$FOUND_LIB" ./liblua.a
-          else
-            exit 1
+        # Try multiple possible locations
+        POSSIBLE_LOCATIONS=(
+          "build/Release-iphoneos/liblua.a"
+          "build/liblua.a"
+          "liblua.a"
+          "build/Release-iphoneos/lua/liblua.a"
+        )
+        
+        FOUND_LIB=""
+        for loc in "${POSSIBLE_LOCATIONS[@]}"; do
+          if [ -f "$loc" ]; then
+            echo "Found library at: $loc"
+            FOUND_LIB="$loc"
+            break
           fi
+        done
+        
+        if [ ! -z "$FOUND_LIB" ]; then
+          echo "Library file found at: $FOUND_LIB"
+          file "$FOUND_LIB"
+          cp "$FOUND_LIB" ./liblua.a
+        else
+          echo "Library file not found in any expected location"
+          echo "Performing deep search for any .a files:"
+          find "$(pwd)" -type f -name "*.a" -ls
+          exit 1
         fi
         
     - name: Upload artifact
