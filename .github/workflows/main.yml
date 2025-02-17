@@ -73,6 +73,8 @@ jobs:
           ARCHS="arm64" \
           CODE_SIGNING_REQUIRED=NO \
           CODE_SIGN_IDENTITY="" \
+          CONFIGURATION_BUILD_DIR="$(pwd)" \
+          CONFIGURATION_TEMP_DIR="$(pwd)/lua.build/Release-iphoneos/lua.build" \
           -verbose
         
         echo "Build completed successfully!"
