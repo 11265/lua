@@ -2,9 +2,19 @@ name: Build iOS Static Library
 
 on:
   push:
-    branches: [ main ]
+    paths:
+      - '**.c'
+      - '**.h'
+      - '.github/workflows/main.yml'
+      - 'generate-xcodeproj.sh'
   pull_request:
-    branches: [ main ]
+    paths:
+      - '**.c'
+      - '**.h'
+      - '.github/workflows/main.yml'
+      - 'generate-xcodeproj.sh'
+  schedule:
+    - cron: '0 0 * * *'  # 每天 UTC 时间 00:00 运行
   workflow_dispatch:
 
 jobs:
