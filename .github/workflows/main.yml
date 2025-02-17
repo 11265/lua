@@ -31,11 +31,9 @@ jobs:
         echo "Current directory: $(pwd)"
         
         echo "Creating Xcode build directories..."
-        mkdir -p lua.build/Release-iphoneos/lua.build
-        mkdir -p lua.build/Release-iphonesimulator/lua.build
-        mkdir -p Release-iphoneos
-        mkdir -p Release-iphonesimulator
-        chmod -R 755 lua.build
+        mkdir -p build/lua.build/Release-iphoneos/lua.build
+        mkdir -p build/lua.build/Release-iphonesimulator/lua.build
+        chmod -R 755 build
         
         echo "Linking source files..."
         for file in ../../*.{h,c}; do
@@ -61,8 +59,9 @@ jobs:
     - name: Build static library
       run: |
         cd build/lua
-        BUILD_DIR="$(pwd)"
-        echo "Current directory: $BUILD_DIR"
+        BUILD_DIR="$(pwd)/build"
+        echo "Current directory: $(pwd)"
+        echo "Build directory: $BUILD_DIR"
         set -e
         
         echo "Building for iOS devices (arm64)..."
@@ -76,8 +75,8 @@ jobs:
           ARCHS="arm64" \
           CODE_SIGNING_REQUIRED=NO \
           CODE_SIGN_IDENTITY="" \
-          BUILD_DIR="$BUILD_DIR" \
           CONFIGURATION_BUILD_DIR="$BUILD_DIR/Release-iphoneos" \
+          CONFIGURATION_TEMP_DIR="$BUILD_DIR/lua.build/Release-iphoneos/lua.build" \
           -verbose
         
         echo "Building for iOS Simulator (x86_64, arm64)..."
@@ -91,8 +90,8 @@ jobs:
           ARCHS="x86_64 arm64" \
           CODE_SIGNING_REQUIRED=NO \
           CODE_SIGN_IDENTITY="" \
-          BUILD_DIR="$BUILD_DIR" \
           CONFIGURATION_BUILD_DIR="$BUILD_DIR/Release-iphonesimulator" \
+          CONFIGURATION_TEMP_DIR="$BUILD_DIR/lua.build/Release-iphonesimulator/lua.build" \
           -verbose
         
         echo "Finding library files..."
@@ -104,7 +103,7 @@ jobs:
           echo "Error: iOS device library not found at $DEVICE_LIB"
           echo "Current directory: $(pwd)"
           echo "Directory contents:"
-          ls -R ./
+          ls -R build/
           exit 1
         fi
         
@@ -112,7 +111,7 @@ jobs:
           echo "Error: iOS simulator library not found at $SIMULATOR_LIB"
           echo "Current directory: $(pwd)"
           echo "Directory contents:"
-          ls -R ./
+          ls -R build/
           exit 1
         fi
         
