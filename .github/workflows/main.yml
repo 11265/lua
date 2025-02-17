@@ -41,8 +41,10 @@ jobs:
         echo "Current directory: $(pwd)"
         
         echo "Creating Xcode build directories..."
-        mkdir -p "$(pwd)/lua.build/Release-iphoneos/lua.build"
-        chmod -R 755 "$(pwd)/lua.build"
+        mkdir -p "Release-iphoneos" "Release-iphonesimulator"
+        xattr -w com.apple.xcode.CreatedByBuildSystem true .
+        xattr -w com.apple.xcode.CreatedByBuildSystem true "Release-iphoneos"
+        xattr -w com.apple.xcode.CreatedByBuildSystem true "Release-iphonesimulator"
         
         echo "Linking source files..."
         for file in ../../*.{h,c}; do
