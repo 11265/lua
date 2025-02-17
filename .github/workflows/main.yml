@@ -62,6 +62,10 @@ jobs:
         echo "Current directory: $(pwd)"
         set -e
         
+        # Create required build directories
+        mkdir -p "$(pwd)/DerivedData/lua.build/Release-iphoneos/lua.build"
+        chmod -R 755 "$(pwd)/DerivedData"
+        
         echo "Building for iOS devices (arm64)..."
         xcodebuild clean build \
           -project lua.xcodeproj \
@@ -74,6 +78,8 @@ jobs:
           CODE_SIGNING_REQUIRED=NO \
           CODE_SIGN_IDENTITY="" \
           CONFIGURATION_BUILD_DIR="$(pwd)" \
+          OBJROOT="$(pwd)/DerivedData" \
+          SYMROOT="$(pwd)/DerivedData" \
           -verbose
         
         echo "Checking library file..."
