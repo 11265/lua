@@ -50,7 +50,7 @@ jobs:
           -output build/liblua.a
           
     - name: Upload Artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: ios-static-library
         path: build/liblua.a
