@@ -73,6 +73,13 @@ jobs:
         
         echo "Building for iOS devices (arm64)..."
         
+        # Clean any previous build artifacts
+        rm -rf build
+        mkdir -p build/Release-iphoneos
+        
+        echo "Source files to be compiled:"
+        ls -la *.c *.h
+        
         xcodebuild clean build \
           -project lua.xcodeproj \
           -target lua \
@@ -89,6 +96,8 @@ jobs:
           CONFIGURATION_TEMP_DIR="$(pwd)/build/Release-iphoneos" \
           BUILT_PRODUCTS_DIR="$(pwd)/build/Release-iphoneos" \
           TARGET_BUILD_DIR="$(pwd)/build/Release-iphoneos" \
+          GCC_GENERATE_DEBUGGING_SYMBOLS=NO \
+          DEBUG_INFORMATION_FORMAT="" \
           -verbose
         
         echo "Build completed successfully!"
@@ -105,9 +114,14 @@ jobs:
         ls -la build || true
         echo "3. Checking build/Release-iphoneos directory:"
         ls -la build/Release-iphoneos || true
+        echo "4. Checking intermediate build directories:"
+        find build -type d -ls
         
         echo "Searching for .a files:"
         find "$(pwd)" -type f -name "*.a" -ls
+        
+        echo "Checking for object files:"
+        find "$(pwd)" -type f -name "*.o" -ls
         
         # Try multiple possible locations
         POSSIBLE_LOCATIONS=(
@@ -117,6 +131,7 @@ jobs:
           "build/Release-iphoneos/lua/liblua.a"
           "build/Release-iphoneos/lua.build/liblua.a"
           "build/lua.build/Release-iphoneos/liblua.a"
+          "build/Release-iphoneos/lua.build/Release-iphoneos/lua.build/Objects-normal/arm64/liblua.a"
         )
         
         FOUND_LIB=""
@@ -146,6 +161,8 @@ jobs:
             echo "No .a files found anywhere in the build directory"
             echo "Build directory contents:"
             find "$(pwd)" -type f -ls
+            echo "Checking compilation output:"
+            cat build/Release-iphoneos/lua.build/Release-iphoneos/lua.build/lua-*.dia || true
             exit 1
           fi
         fi
