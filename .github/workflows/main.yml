@@ -71,12 +71,6 @@ jobs:
           CODE_SIGN_IDENTITY="" \
           -verbose
         
-        echo "iOS device build output:"
-        ls -la Release-iphoneos || true
-        ls -la build/Release-iphoneos || true
-        ls -la ../Release-iphoneos || true
-        find . -name "liblua.a" -type f
-        
         echo "Building for iOS Simulator (x86_64, arm64)..."
         xcodebuild clean build \
           -project lua.xcodeproj \
@@ -90,36 +84,28 @@ jobs:
           CODE_SIGN_IDENTITY="" \
           -verbose
         
-        echo "iOS simulator build output:"
-        ls -la Release-iphonesimulator || true
-        ls -la build/Release-iphonesimulator || true
-        ls -la ../Release-iphonesimulator || true
-        find . -name "liblua.a" -type f
-        
-        echo "Build directory contents:"
-        ls -la
-        pwd
-        find "$BUILD_DIR" -name "liblua.a" -type f
-        
+        echo "Finding library files..."
         DEVICE_LIB=""
         SIMULATOR_LIB=""
         
-        # Find device library
-        for lib in $(find . -name "liblua.a" -type f); do
-          if file "$lib" | grep -q "arm64"; then
-            DEVICE_LIB="$lib"
-            echo "Found device library: $DEVICE_LIB"
+        # Single traversal to find both libraries
+        find . -name "liblua.a" -type f | while read -r lib; do
+          if [ -f "$lib" ]; then
+            file_info=$(file "$lib")
+            echo "Found library: $lib"
+            echo "File info: $file_info"
+            
+            if echo "$file_info" | grep -q "arm64" && ! echo "$file_info" | grep -q "x86_64"; then
+              DEVICE_LIB="$lib"
+              echo "✓ This is the device library (arm64)"
+            elif echo "$file_info" | grep -q "x86_64"; then
+              SIMULATOR_LIB="$lib"
+              echo "✓ This is the simulator library (x86_64)"
+            fi
           fi
         done
         
-        # Find simulator library
-        for lib in $(find . -name "liblua.a" -type f); do
-          if file "$lib" | grep -q "x86_64"; then
-            SIMULATOR_LIB="$lib"
-            echo "Found simulator library: $SIMULATOR_LIB"
-          fi
-        done
-        
+        # Check if both libraries were found
         if [ -z "$DEVICE_LIB" ]; then
           echo "Error: iOS device library not found"
           exit 1
@@ -131,6 +117,9 @@ jobs:
         fi
         
         echo "Creating universal binary..."
+        echo "Device library: $DEVICE_LIB"
+        echo "Simulator library: $SIMULATOR_LIB"
+        
         lipo -create \
           "$DEVICE_LIB" \
           "$SIMULATOR_LIB" \
