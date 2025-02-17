@@ -5,57 +5,85 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: macos-13
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 1
     
     - name: Select Xcode
-      run: sudo xcode-select -s /Applications/Xcode.app
-      
-    - name: Check Xcode version
-      run: xcodebuild -version
+      run: |
+        sudo xcode-select -switch /Applications/Xcode.app
+        xcodebuild -version
       
     - name: Prepare build environment
       run: |
-        cd lua
-        mkdir -p build
-        cd build
-        ln -s ../../lua/*.h .
-        ln -s ../../lua/*.c .
+        pwd
+        ls -la
+        echo "Creating build directory..."
+        mkdir -p build/lua
+        cd build/lua
+        echo "Current directory: $(pwd)"
+        
+        echo "Linking source files..."
+        for file in ../../lua/*.h ../../lua/*.c; do
+          if [ -f "$file" ]; then
+            echo "Linking: $file"
+            ln -sf "$file" .
+          fi
+        done
+        
+        echo "Build directory contents:"
+        ls -la
         
     - name: Create Xcode project
       run: |
-        cd lua/build
-        chmod +x ../../.github/workflows/generate-xcodeproj.sh
-        ../../.github/workflows/generate-xcodeproj.sh
+        cd build/lua
+        echo "Current directory: $(pwd)"
+        chmod +x ../../lua/generate-xcodeproj.sh
+        ../../lua/generate-xcodeproj.sh
+        
+        echo "Xcode project contents:"
+        ls -la lua.xcodeproj/
         
     - name: Build static library
       run: |
-        cd lua/build
+        cd build/lua
+        echo "Current directory: $(pwd)"
         set -e
+        
         echo "Building for iOS devices (arm64)..."
-        xcodebuild -project lua.xcodeproj -target lua -configuration Release -sdk iphoneos -verbose
+        xcodebuild clean build \
+          -project lua.xcodeproj \
+          -target lua \
+          -configuration Release \
+          -sdk iphoneos \
+          ONLY_ACTIVE_ARCH=NO \
+          BUILD_DIR="$(pwd)/build" \
+          CONFIGURATION_BUILD_DIR="$(pwd)/build/Release-iphoneos" \
+          ARCHS="arm64" \
+          -verbose
         
         echo "Building for iOS Simulator (x86_64, arm64)..."
-        xcodebuild -project lua.xcodeproj -target lua -configuration Release -sdk iphonesimulator -verbose
+        xcodebuild clean build \
+          -project lua.xcodeproj \
+          -target lua \
+          -configuration Release \
+          -sdk iphonesimulator \
+          ONLY_ACTIVE_ARCH=NO \
+          BUILD_DIR="$(pwd)/build" \
+          CONFIGURATION_BUILD_DIR="$(pwd)/build/Release-iphonesimulator" \
+          ARCHS="x86_64 arm64" \
+          -verbose
         
         echo "Checking build outputs..."
         ls -la build/Release-iphoneos/
         ls -la build/Release-iphonesimulator/
-        
-        if [ ! -f "build/Release-iphoneos/liblua.a" ]; then
-          echo "Error: iOS device library not found"
-          exit 1
-        fi
-        
-        if [ ! -f "build/Release-iphonesimulator/liblua.a" ]; then
-          echo "Error: iOS simulator library not found"
-          exit 1
-        fi
         
         echo "Creating universal binary..."
         lipo -create \
@@ -64,9 +92,11 @@ jobs:
           -output liblua.a
         
         echo "Build completed successfully!"
+        ls -la liblua.a
         
     - name: Upload artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
-        name: liblua
-        path: lua/build/liblua.a 
+        name: ios-static-library
+        path: build/lua/liblua.a
+        if-no-files-found: error 
