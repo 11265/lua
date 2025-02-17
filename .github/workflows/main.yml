@@ -83,14 +83,23 @@ jobs:
           ARCHS="arm64" \
           CODE_SIGNING_REQUIRED=NO \
           CODE_SIGN_IDENTITY="" \
+          CONFIGURATION_BUILD_DIR="$(pwd)/build/Release-iphoneos" \
+          SYMROOT="$(pwd)/build" \
+          OBJROOT="$(pwd)/build" \
           -verbose
         
         echo "Build completed successfully!"
         echo "Checking build directory structure:"
         ls -R build
         
+        echo "Current directory contents:"
+        ls -la
+        
+        echo "Checking Release-iphoneos directory:"
+        ls -la build/Release-iphoneos || true
+        
         echo "Checking for library file:"
-        find . -name "liblua.a"
+        find . -type f -name "*.a" -ls
         
         if [ -f "build/Release-iphoneos/liblua.a" ]; then
           echo "Library file found!"
@@ -99,8 +108,16 @@ jobs:
         else
           echo "Library file not found in expected location"
           echo "Checking entire build directory for any .a files:"
-          find . -name "*.a"
-          exit 1
+          find . -type f -name "*.a" -ls
+          
+          # Try to find the library in alternate locations
+          FOUND_LIB=$(find . -type f -name "liblua.a" | head -n 1)
+          if [ ! -z "$FOUND_LIB" ]; then
+            echo "Found library at alternate location: $FOUND_LIB"
+            cp "$FOUND_LIB" ./liblua.a
+          else
+            exit 1
+          fi
         fi
         
     - name: Upload artifact
