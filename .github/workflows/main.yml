@@ -72,6 +72,8 @@ jobs:
         set -e
         
         echo "Building for iOS devices (arm64)..."
+        mkdir -p "./build/Release-iphoneos"
+        
         xcodebuild clean build \
           -project lua.xcodeproj \
           -target lua \
@@ -82,21 +84,23 @@ jobs:
           ARCHS="arm64" \
           CODE_SIGNING_REQUIRED=NO \
           CODE_SIGN_IDENTITY="" \
-          BUILD_DIR="build" \
-          CONFIGURATION_BUILD_DIR="build/Release-iphoneos" \
+          BUILD_DIR="./build" \
+          SYMROOT="./build" \
+          OBJROOT="./build" \
+          CONFIGURATION_BUILD_DIR="./build/Release-iphoneos" \
           -verbose
         
         echo "Build completed successfully!"
         echo "Checking build directory structure:"
-        ls -R build
+        ls -R ./build
         
         echo "Checking for library file:"
         find . -name "liblua.a"
         
-        if [ -f "build/Release-iphoneos/liblua.a" ]; then
+        if [ -f "./build/Release-iphoneos/liblua.a" ]; then
           echo "Library file found!"
-          file build/Release-iphoneos/liblua.a
-          cp build/Release-iphoneos/liblua.a ./liblua.a
+          file "./build/Release-iphoneos/liblua.a"
+          cp "./build/Release-iphoneos/liblua.a" ./liblua.a
         else
           echo "Library file not found in expected location"
           exit 1
