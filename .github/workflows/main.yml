@@ -72,7 +72,10 @@ jobs:
           -verbose
         
         echo "iOS device build output:"
+        ls -la Release-iphoneos || true
         ls -la build/Release-iphoneos || true
+        ls -la ../Release-iphoneos || true
+        find . -name "liblua.a" -type f
         
         echo "Building for iOS Simulator (x86_64, arm64)..."
         xcodebuild clean build \
@@ -88,28 +91,49 @@ jobs:
           -verbose
         
         echo "iOS simulator build output:"
+        ls -la Release-iphonesimulator || true
         ls -la build/Release-iphonesimulator || true
+        ls -la ../Release-iphonesimulator || true
+        find . -name "liblua.a" -type f
         
         echo "Build directory contents:"
         ls -la
-        find . -name "*.a" -type f
+        pwd
+        find "$BUILD_DIR" -name "liblua.a" -type f
+        
+        DEVICE_LIB=""
+        SIMULATOR_LIB=""
+        
+        # Find device library
+        for lib in $(find . -name "liblua.a" -type f); do
+          if file "$lib" | grep -q "arm64"; then
+            DEVICE_LIB="$lib"
+            echo "Found device library: $DEVICE_LIB"
+          fi
+        done
+        
+        # Find simulator library
+        for lib in $(find . -name "liblua.a" -type f); do
+          if file "$lib" | grep -q "x86_64"; then
+            SIMULATOR_LIB="$lib"
+            echo "Found simulator library: $SIMULATOR_LIB"
+          fi
+        done
+        
+        if [ -z "$DEVICE_LIB" ]; then
+          echo "Error: iOS device library not found"
+          exit 1
+        fi
+        
+        if [ -z "$SIMULATOR_LIB" ]; then
+          echo "Error: iOS simulator library not found"
+          exit 1
+        fi
         
         echo "Creating universal binary..."
-        if [ ! -f "build/Release-iphoneos/liblua.a" ]; then
-          echo "Error: iOS device library not found"
-          find . -name "liblua.a" -type f
-          exit 1
-        fi
-        
-        if [ ! -f "build/Release-iphonesimulator/liblua.a" ]; then
-          echo "Error: iOS simulator library not found"
-          find . -name "liblua.a" -type f
-          exit 1
-        fi
-        
         lipo -create \
-          build/Release-iphoneos/liblua.a \
-          build/Release-iphonesimulator/liblua.a \
+          "$DEVICE_LIB" \
+          "$SIMULATOR_LIB" \
           -output liblua.a
         
         echo "Build completed successfully!"
