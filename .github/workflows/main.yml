@@ -54,7 +54,8 @@ jobs:
     - name: Build static library
       run: |
         cd build
-        echo "Current directory: $(pwd)"
+        BUILD_DIR="$(pwd)"
+        echo "Current directory: $BUILD_DIR"
         set -e
         
         echo "Building for iOS devices (arm64)..."
@@ -64,15 +65,18 @@ jobs:
           -configuration Release \
           -sdk iphoneos \
           ONLY_ACTIVE_ARCH=NO \
-          BUILD_DIR="./" \
-          BUILD_ROOT="./" \
-          SYMROOT="./" \
-          OBJROOT="./" \
-          CONFIGURATION_BUILD_DIR="./Release-iphoneos" \
+          BUILD_DIR="$BUILD_DIR" \
+          BUILD_ROOT="$BUILD_DIR" \
+          SYMROOT="$BUILD_DIR" \
+          OBJROOT="$BUILD_DIR" \
+          CONFIGURATION_BUILD_DIR="$BUILD_DIR/Release-iphoneos" \
           ARCHS="arm64" \
           CODE_SIGNING_REQUIRED=NO \
           CODE_SIGN_IDENTITY="" \
           -verbose
+        
+        echo "iOS device build output:"
+        ls -la Release-iphoneos || true
         
         echo "Building for iOS Simulator (x86_64, arm64)..."
         xcodebuild clean build \
@@ -81,21 +85,36 @@ jobs:
           -configuration Release \
           -sdk iphonesimulator \
           ONLY_ACTIVE_ARCH=NO \
-          BUILD_DIR="./" \
-          BUILD_ROOT="./" \
-          SYMROOT="./" \
-          OBJROOT="./" \
-          CONFIGURATION_BUILD_DIR="./Release-iphonesimulator" \
+          BUILD_DIR="$BUILD_DIR" \
+          BUILD_ROOT="$BUILD_DIR" \
+          SYMROOT="$BUILD_DIR" \
+          OBJROOT="$BUILD_DIR" \
+          CONFIGURATION_BUILD_DIR="$BUILD_DIR/Release-iphonesimulator" \
           ARCHS="x86_64 arm64" \
           CODE_SIGNING_REQUIRED=NO \
           CODE_SIGN_IDENTITY="" \
           -verbose
         
-        echo "Checking build outputs..."
-        ls -la Release-iphoneos/
-        ls -la Release-iphonesimulator/
+        echo "iOS simulator build output:"
+        ls -la Release-iphonesimulator || true
+        
+        echo "Build directory contents:"
+        ls -la
+        find . -name "*.a" -type f
         
         echo "Creating universal binary..."
+        if [ ! -f "Release-iphoneos/liblua.a" ]; then
+          echo "Error: iOS device library not found"
+          find . -name "liblua.a" -type f
+          exit 1
+        fi
+        
+        if [ ! -f "Release-iphonesimulator/liblua.a" ]; then
+          echo "Error: iOS simulator library not found"
+          find . -name "liblua.a" -type f
+          exit 1
+        fi
+        
         lipo -create \
           Release-iphoneos/liblua.a \
           Release-iphonesimulator/liblua.a \
@@ -103,6 +122,8 @@ jobs:
         
         echo "Build completed successfully!"
         ls -la liblua.a
+        file liblua.a
+        lipo -info liblua.a
         
     - name: Upload artifact
       uses: actions/upload-artifact@v4
