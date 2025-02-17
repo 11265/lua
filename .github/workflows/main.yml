@@ -59,9 +59,7 @@ jobs:
     - name: Build static library
       run: |
         cd build/lua
-        BUILD_DIR="$(pwd)/build"
         echo "Current directory: $(pwd)"
-        echo "Build directory: $BUILD_DIR"
         set -e
         
         echo "Building for iOS devices (arm64)..."
@@ -75,56 +73,21 @@ jobs:
           ARCHS="arm64" \
           CODE_SIGNING_REQUIRED=NO \
           CODE_SIGN_IDENTITY="" \
-          CONFIGURATION_BUILD_DIR="$BUILD_DIR/Release-iphoneos" \
-          CONFIGURATION_TEMP_DIR="$BUILD_DIR/lua.build/Release-iphoneos/lua.build" \
+          CONFIGURATION_BUILD_DIR="$(pwd)" \
           -verbose
         
-        echo "Building for iOS Simulator (x86_64, arm64)..."
-        xcodebuild clean build \
-          -project lua.xcodeproj \
-          -target lua \
-          -configuration Release \
-          -sdk iphonesimulator \
-          ONLY_ACTIVE_ARCH=NO \
-          BUILD_FOR_DISTRIBUTION=YES \
-          ARCHS="x86_64 arm64" \
-          CODE_SIGNING_REQUIRED=NO \
-          CODE_SIGN_IDENTITY="" \
-          CONFIGURATION_BUILD_DIR="$BUILD_DIR/Release-iphonesimulator" \
-          CONFIGURATION_TEMP_DIR="$BUILD_DIR/lua.build/Release-iphonesimulator/lua.build" \
-          -verbose
-        
-        echo "Finding library files..."
-        DEVICE_LIB="$BUILD_DIR/Release-iphoneos/liblua.a"
-        SIMULATOR_LIB="$BUILD_DIR/Release-iphonesimulator/liblua.a"
-        
-        # Check if both libraries exist
-        if [ ! -f "$DEVICE_LIB" ]; then
-          echo "Error: iOS device library not found at $DEVICE_LIB"
+        echo "Checking library file..."
+        if [ ! -f "liblua.a" ]; then
+          echo "Error: iOS device library not found"
           echo "Current directory: $(pwd)"
           echo "Directory contents:"
-          ls -R build/
+          ls -la
           exit 1
         fi
-        
-        if [ ! -f "$SIMULATOR_LIB" ]; then
-          echo "Error: iOS simulator library not found at $SIMULATOR_LIB"
-          echo "Current directory: $(pwd)"
-          echo "Directory contents:"
-          ls -R build/
-          exit 1
-        fi
-        
-        echo "Creating universal binary..."
-        echo "Device library: $DEVICE_LIB"
-        echo "Simulator library: $SIMULATOR_LIB"
-        
-        lipo -create "$DEVICE_LIB" "$SIMULATOR_LIB" -output liblua.a
         
         echo "Build completed successfully!"
         ls -la liblua.a
         file liblua.a
-        lipo -info liblua.a
         
     - name: Upload artifact
       uses: actions/upload-artifact@v4
