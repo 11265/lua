@@ -31,9 +31,8 @@ jobs:
         echo "Current directory: $(pwd)"
         
         echo "Creating Xcode build directories..."
-        mkdir -p build/lua.build/Release-iphoneos/lua.build
-        mkdir -p build/lua.build/Release-iphonesimulator/lua.build
-        chmod -R 755 build
+        mkdir -p "$(pwd)/lua.build/Release-iphoneos/lua.build"
+        chmod -R 755 "$(pwd)/lua.build"
         
         echo "Linking source files..."
         for file in ../../*.{h,c}; do
@@ -73,17 +72,17 @@ jobs:
           ARCHS="arm64" \
           CODE_SIGNING_REQUIRED=NO \
           CODE_SIGN_IDENTITY="" \
+          CONFIGURATION_BUILD_DIR="$(pwd)/Release-iphoneos" \
+          CONFIGURATION_TEMP_DIR="$(pwd)/lua.build/Release-iphoneos/lua.build" \
           -verbose
         
         echo "Build completed successfully!"
-        echo "Copying library file..."
-        cp Release-iphoneos/liblua.a ./liblua.a
-        ls -la liblua.a
-        file liblua.a
+        ls -la Release-iphoneos/liblua.a
+        file Release-iphoneos/liblua.a
         
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: ios-static-library
-        path: build/lua/liblua.a
+        path: build/lua/Release-iphoneos/liblua.a
         if-no-files-found: error 
