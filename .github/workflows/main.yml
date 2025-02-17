@@ -69,17 +69,8 @@ jobs:
       run: |
         cd build/lua
         echo "Current directory: $(pwd)"
-        set -e
         
         echo "Building for iOS devices (arm64)..."
-        
-        # Clean any previous build artifacts
-        rm -rf build
-        mkdir -p build/Release-iphoneos
-        
-        echo "Source files to be compiled:"
-        ls -la *.c *.h
-        
         xcodebuild clean build \
           -project lua.xcodeproj \
           -target lua \
@@ -90,105 +81,50 @@ jobs:
           ARCHS="arm64" \
           CODE_SIGNING_REQUIRED=NO \
           CODE_SIGN_IDENTITY="" \
-          SYMROOT="$(pwd)/build" \
-          OBJROOT="$(pwd)/build" \
-          CONFIGURATION_BUILD_DIR="$(pwd)/build/Release-iphoneos" \
-          CONFIGURATION_TEMP_DIR="$(pwd)/build/Release-iphoneos" \
-          BUILT_PRODUCTS_DIR="$(pwd)/build/Release-iphoneos" \
-          TARGET_BUILD_DIR="$(pwd)/build/Release-iphoneos" \
-          GCC_GENERATE_DEBUGGING_SYMBOLS=NO \
-          DEBUG_INFORMATION_FORMAT="" \
-          VALID_ARCHS="arm64" \
-          EXCLUDED_ARCHS="" \
-          TARGETED_DEVICE_FAMILY="1,2" \
-          IPHONEOS_DEPLOYMENT_TARGET=12.0 \
-          SDKROOT=iphoneos \
-          SKIP_INSTALL=NO \
-          DEPLOYMENT_LOCATION=NO \
-          DSTROOT="$(pwd)/build" \
-          INSTALL_PATH="" \
-          DYLIB_CURRENT_VERSION=1 \
-          DYLIB_COMPATIBILITY_VERSION=1 \
-          PRODUCT_BUNDLE_IDENTIFIER="org.lua.lua" \
-          PRODUCT_MODULE_NAME="lua" \
-          PRODUCT_MODULE_VERSION=1 \
-          DEFINES_MODULE=NO \
-          GCC_C_LANGUAGE_STANDARD=gnu11 \
-          CLANG_ENABLE_OBJC_ARC=NO \
-          ENABLE_NS_ASSERTIONS=NO \
-          LIBRARY_STYLE=STATIC \
-          MACH_O_TYPE=staticlib \
-          EXECUTABLE_PREFIX=lib \
-          EXECUTABLE_EXTENSION=a \
-          PRODUCT_NAME=lua \
-          -verbose
+          CONFIGURATION_BUILD_DIR="$(pwd)/Release-iphoneos" \
+          SYMROOT="$(pwd)" \
+          OBJROOT="$(pwd)" || exit 1
         
-        echo "Build completed successfully!"
-        echo "Checking build directory structure:"
-        ls -R build
+        echo "Building for iOS Simulator (x86_64, arm64)..."
+        xcodebuild clean build \
+          -project lua.xcodeproj \
+          -target lua \
+          -configuration Release \
+          -sdk iphonesimulator \
+          ONLY_ACTIVE_ARCH=NO \
+          BUILD_FOR_DISTRIBUTION=YES \
+          ARCHS="x86_64 arm64" \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGN_IDENTITY="" \
+          CONFIGURATION_BUILD_DIR="$(pwd)/Release-iphonesimulator" \
+          SYMROOT="$(pwd)" \
+          OBJROOT="$(pwd)" || exit 1
         
-        echo "Current directory contents:"
-        ls -la
+        echo "Build directory structure:"
+        ls -R
         
-        echo "Checking all possible library locations:"
-        echo "1. Checking Release-iphoneos directory:"
-        ls -la build/Release-iphoneos || true
-        echo "2. Checking direct build directory:"
-        ls -la build || true
-        echo "3. Checking build/Release-iphoneos directory:"
-        ls -la build/Release-iphoneos || true
-        echo "4. Checking intermediate build directories:"
-        find build -type d -ls
-        
-        echo "Searching for .a files:"
-        find "$(pwd)" -type f -name "*.a" -ls
-        
-        echo "Checking for object files:"
-        find "$(pwd)" -type f -name "*.o" -ls
-        
-        # Try multiple possible locations
-        POSSIBLE_LOCATIONS=(
-          "build/Release-iphoneos/liblua.a"
-          "build/liblua.a"
-          "liblua.a"
-          "build/Release-iphoneos/lua/liblua.a"
-          "build/Release-iphoneos/lua.build/liblua.a"
-          "build/lua.build/Release-iphoneos/liblua.a"
-          "build/Release-iphoneos/lua.build/Release-iphoneos/lua.build/Objects-normal/arm64/liblua.a"
-        )
-        
-        FOUND_LIB=""
-        for loc in "${POSSIBLE_LOCATIONS[@]}"; do
-          if [ -f "$loc" ]; then
-            echo "Found library at: $loc"
-            FOUND_LIB="$loc"
-            break
-          fi
-        done
-        
-        if [ ! -z "$FOUND_LIB" ]; then
-          echo "Library file found at: $FOUND_LIB"
-          file "$FOUND_LIB"
-          cp "$FOUND_LIB" ./liblua.a
-        else
-          echo "Library file not found in any expected location"
-          echo "Performing deep search for any .a files:"
-          find "$(pwd)" -type f -name "*.a" -ls
-          
-          # Try to find any .a file
-          FOUND_LIB=$(find "$(pwd)" -type f -name "*.a" | head -n 1)
-          if [ ! -z "$FOUND_LIB" ]; then
-            echo "Found library at alternate location: $FOUND_LIB"
-            cp "$FOUND_LIB" ./liblua.a
-          else
-            echo "No .a files found anywhere in the build directory"
-            echo "Build directory contents:"
-            find "$(pwd)" -type f -ls
-            echo "Checking compilation output:"
-            cat build/Release-iphoneos/lua.build/Release-iphoneos/lua.build/lua-*.dia || true
-            exit 1
-          fi
+        echo "Creating universal binary..."
+        if [ ! -f "Release-iphoneos/liblua.a" ]; then
+          echo "Error: iOS device library not found"
+          exit 1
         fi
+        
+        if [ ! -f "Release-iphonesimulator/liblua.a" ]; then
+          echo "Error: iOS simulator library not found"
+          exit 1
+        fi
+        
+        lipo -create \
+          Release-iphoneos/liblua.a \
+          Release-iphonesimulator/liblua.a \
+          -output liblua.a
+        
+        if [ ! -f "liblua.a" ]; then
+          echo "Error: Failed to create universal binary"
+          exit 1
+        fi
+        
+        echo "Build completed successfully"
         
     - name: Upload artifact
       uses: actions/upload-artifact@v4
