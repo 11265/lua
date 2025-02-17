@@ -98,6 +98,21 @@ jobs:
           TARGET_BUILD_DIR="$(pwd)/build/Release-iphoneos" \
           GCC_GENERATE_DEBUGGING_SYMBOLS=NO \
           DEBUG_INFORMATION_FORMAT="" \
+          VALID_ARCHS="arm64" \
+          EXCLUDED_ARCHS="" \
+          TARGETED_DEVICE_FAMILY="1,2" \
+          IPHONEOS_DEPLOYMENT_TARGET=12.0 \
+          SDKROOT=iphoneos \
+          SKIP_INSTALL=NO \
+          DEPLOYMENT_LOCATION=NO \
+          DSTROOT="$(pwd)/build" \
+          INSTALL_PATH="" \
+          DYLIB_CURRENT_VERSION=1 \
+          DYLIB_COMPATIBILITY_VERSION=1 \
+          PRODUCT_BUNDLE_IDENTIFIER="org.lua.lua" \
+          PRODUCT_MODULE_NAME="lua" \
+          PRODUCT_MODULE_VERSION=1 \
+          DEFINES_MODULE=NO \
           -verbose
         
         echo "Build completed successfully!"
