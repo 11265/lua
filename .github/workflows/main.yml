@@ -76,8 +76,8 @@ jobs:
           ARCHS="arm64" \
           CODE_SIGNING_REQUIRED=NO \
           CODE_SIGN_IDENTITY="" \
-          SYMROOT="$BUILD_DIR" \
-          OBJROOT="$BUILD_DIR/lua.build" \
+          BUILD_DIR="$BUILD_DIR" \
+          CONFIGURATION_BUILD_DIR="$BUILD_DIR/Release-iphoneos" \
           -verbose
         
         echo "Building for iOS Simulator (x86_64, arm64)..."
@@ -91,20 +91,20 @@ jobs:
           ARCHS="x86_64 arm64" \
           CODE_SIGNING_REQUIRED=NO \
           CODE_SIGN_IDENTITY="" \
-          SYMROOT="$BUILD_DIR" \
-          OBJROOT="$BUILD_DIR/lua.build" \
+          BUILD_DIR="$BUILD_DIR" \
+          CONFIGURATION_BUILD_DIR="$BUILD_DIR/Release-iphonesimulator" \
           -verbose
         
         echo "Finding library files..."
-        DEVICE_LIB="build/Release-iphoneos/liblua.a"
-        SIMULATOR_LIB="build/Release-iphonesimulator/liblua.a"
+        DEVICE_LIB="$BUILD_DIR/Release-iphoneos/liblua.a"
+        SIMULATOR_LIB="$BUILD_DIR/Release-iphonesimulator/liblua.a"
         
         # Check if both libraries exist
         if [ ! -f "$DEVICE_LIB" ]; then
           echo "Error: iOS device library not found at $DEVICE_LIB"
           echo "Current directory: $(pwd)"
           echo "Directory contents:"
-          ls -R build/
+          ls -R ./
           exit 1
         fi
         
@@ -112,7 +112,7 @@ jobs:
           echo "Error: iOS simulator library not found at $SIMULATOR_LIB"
           echo "Current directory: $(pwd)"
           echo "Directory contents:"
-          ls -R build/
+          ls -R ./
           exit 1
         fi
         
