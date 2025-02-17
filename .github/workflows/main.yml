@@ -72,10 +72,7 @@ jobs:
         set -e
         
         echo "Building for iOS devices (arm64)..."
-        mkdir -p "$(pwd)/Release-iphoneos"
-        mkdir -p "$(pwd)/lua.build/Release-iphoneos/lua.build"
-        
-        xcodebuild build \
+        xcodebuild clean build \
           -project lua.xcodeproj \
           -target lua \
           -configuration Release \
@@ -85,23 +82,21 @@ jobs:
           ARCHS="arm64" \
           CODE_SIGNING_REQUIRED=NO \
           CODE_SIGN_IDENTITY="" \
-          CONFIGURATION_BUILD_DIR="$(pwd)/Release-iphoneos" \
-          CONFIGURATION_TEMP_DIR="$(pwd)/lua.build/Release-iphoneos/lua.build" \
+          BUILD_DIR="build" \
+          CONFIGURATION_BUILD_DIR="build/Release-iphoneos" \
           -verbose
         
         echo "Build completed successfully!"
         echo "Checking build directory structure:"
-        ls -R "$(pwd)"
-        
-        echo "Checking Release-iphoneos directory:"
-        ls -la "$(pwd)/Release-iphoneos"
+        ls -R build
         
         echo "Checking for library file:"
-        find "$(pwd)" -name "liblua.a"
+        find . -name "liblua.a"
         
-        if [ -f "$(pwd)/Release-iphoneos/liblua.a" ]; then
+        if [ -f "build/Release-iphoneos/liblua.a" ]; then
           echo "Library file found!"
-          file "$(pwd)/Release-iphoneos/liblua.a"
+          file build/Release-iphoneos/liblua.a
+          cp build/Release-iphoneos/liblua.a ./liblua.a
         else
           echo "Library file not found in expected location"
           exit 1
@@ -111,5 +106,5 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: ios-static-library
-        path: build/lua/Release-iphoneos/liblua.a
+        path: build/lua/liblua.a
         if-no-files-found: error 
