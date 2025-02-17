@@ -43,33 +43,34 @@ jobs:
         SOURCE_FILES=$(ls *.c | grep -v 'lua.c\|onelua.c\|ltests.c')
         
         # Create temporary project file
-        echo '// !$*UTF8*$!' > lua.xcodeproj/project.pbxproj
-        echo '{' >> lua.xcodeproj/project.pbxproj
-        echo '  archiveVersion = 1;' >> lua.xcodeproj/project.pbxproj
-        echo '  classes = {};' >> lua.xcodeproj/project.pbxproj
-        echo '  objectVersion = 56;' >> lua.xcodeproj/project.pbxproj
-        echo '  objects = {' >> lua.xcodeproj/project.pbxproj
-        
-        # PBXBuildFile section
-        echo '    /* Begin PBXBuildFile section */' >> lua.xcodeproj/project.pbxproj
-        for file in $SOURCE_FILES; do
-          UUID1=$(uuidgen | tr -d - | cut -c1-24)
-          UUID2=$(uuidgen | tr -d - | cut -c1-24)
-          echo "    $UUID1 /* $file in Sources */ = {isa = PBXBuildFile; fileRef = $UUID2 /* $file */; };" >> lua.xcodeproj/project.pbxproj
-        done
-        echo '    /* End PBXBuildFile section */' >> lua.xcodeproj/project.pbxproj
-        
-        # PBXFileReference section
-        echo '    /* Begin PBXFileReference section */' >> lua.xcodeproj/project.pbxproj
-        for file in $SOURCE_FILES; do
-          UUID=$(uuidgen | tr -d - | cut -c1-24)
-          echo "    $UUID /* $file */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = $file; sourceTree = \"<group>\"; };" >> lua.xcodeproj/project.pbxproj
-        done
-        echo '    8D1107320486CEB800E47090 /* liblua.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = liblua.a; sourceTree = BUILT_PRODUCTS_DIR; };' >> lua.xcodeproj/project.pbxproj
-        echo '    /* End PBXFileReference section */' >> lua.xcodeproj/project.pbxproj
-        
-        # PBXFrameworksBuildPhase section
-        cat >> lua.xcodeproj/project.pbxproj << 'EOF'
+        {
+          echo "// !$*UTF8*$!"
+          echo "{"
+          echo "  archiveVersion = 1;"
+          echo "  classes = {};"
+          echo "  objectVersion = 56;"
+          echo "  objects = {"
+          
+          # PBXBuildFile section
+          echo "    /* Begin PBXBuildFile section */"
+          for file in $SOURCE_FILES; do
+            UUID1=$(uuidgen | tr -d - | cut -c1-24)
+            UUID2=$(uuidgen | tr -d - | cut -c1-24)
+            echo "    $UUID1 /* $file in Sources */ = {isa = PBXBuildFile; fileRef = $UUID2 /* $file */; };"
+          done
+          echo "    /* End PBXBuildFile section */"
+          
+          # PBXFileReference section
+          echo "    /* Begin PBXFileReference section */"
+          for file in $SOURCE_FILES; do
+            UUID=$(uuidgen | tr -d - | cut -c1-24)
+            echo "    $UUID /* $file */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = $file; sourceTree = \"<group>\"; };"
+          done
+          echo "    8D1107320486CEB800E47090 /* liblua.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = liblua.a; sourceTree = BUILT_PRODUCTS_DIR; };"
+          echo "    /* End PBXFileReference section */"
+          
+          # PBXFrameworksBuildPhase section
+          cat << "EOFFW"
     /* Begin PBXFrameworksBuildPhase section */
     8D11072E0486CEB800E47090 /* Frameworks */ = {
       isa = PBXFrameworksBuildPhase;
@@ -79,24 +80,24 @@ jobs:
       runOnlyForDeploymentPostprocessing = 0;
     };
     /* End PBXFrameworksBuildPhase section */
-EOF
-        
-        # PBXGroup section
-        echo '    /* Begin PBXGroup section */' >> lua.xcodeproj/project.pbxproj
-        echo '    29B97314FDCFA39411CA2CEA /* lua */ = {' >> lua.xcodeproj/project.pbxproj
-        echo '      isa = PBXGroup;' >> lua.xcodeproj/project.pbxproj
-        echo '      children = (' >> lua.xcodeproj/project.pbxproj
-        for file in $SOURCE_FILES; do
-          UUID=$(uuidgen | tr -d - | cut -c1-24)
-          echo "        $UUID /* $file */," >> lua.xcodeproj/project.pbxproj
-        done
-        echo '      );' >> lua.xcodeproj/project.pbxproj
-        echo '      sourceTree = "<group>";' >> lua.xcodeproj/project.pbxproj
-        echo '    };' >> lua.xcodeproj/project.pbxproj
-        echo '    /* End PBXGroup section */' >> lua.xcodeproj/project.pbxproj
-        
-        # Add remaining sections
-        cat >> lua.xcodeproj/project.pbxproj << 'EOF'
+EOFFW
+          
+          # PBXGroup section
+          echo "    /* Begin PBXGroup section */"
+          echo "    29B97314FDCFA39411CA2CEA /* lua */ = {"
+          echo "      isa = PBXGroup;"
+          echo "      children = ("
+          for file in $SOURCE_FILES; do
+            UUID=$(uuidgen | tr -d - | cut -c1-24)
+            echo "        $UUID /* $file */,"
+          done
+          echo "      );"
+          echo "      sourceTree = \"<group>\";"
+          echo "    };"
+          echo "    /* End PBXGroup section */"
+          
+          # Add remaining sections
+          cat << "EOFREM"
     /* Begin PBXNativeTarget section */
     8D1107260486CEB800E47090 /* lua */ = {
       isa = PBXNativeTarget;
@@ -142,9 +143,13 @@ EOF
       isa = PBXSourcesBuildPhase;
       buildActionMask = 2147483647;
       files = (
-$(for file in $SOURCE_FILES; do
-  echo "        $(uuidgen | tr -d - | cut -c1-24) /* $file in Sources */,"
-done)
+EOFREM
+
+          for file in $SOURCE_FILES; do
+            echo "        $(uuidgen | tr -d - | cut -c1-24) /* $file in Sources */,"
+          done
+
+          cat << "EOFEND"
       );
       runOnlyForDeploymentPostprocessing = 0;
     };
@@ -203,7 +208,8 @@ done)
   };
   rootObject = 29B97313FDCFA39411CA2CEA /* Project object */;
 }
-EOF
+EOFEND
+        } > lua.xcodeproj/project.pbxproj
         
     - name: Build Static Library
       working-directory: build/lua
