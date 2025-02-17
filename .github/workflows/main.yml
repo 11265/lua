@@ -113,6 +113,14 @@ jobs:
           PRODUCT_MODULE_NAME="lua" \
           PRODUCT_MODULE_VERSION=1 \
           DEFINES_MODULE=NO \
+          GCC_C_LANGUAGE_STANDARD=gnu11 \
+          CLANG_ENABLE_OBJC_ARC=NO \
+          ENABLE_NS_ASSERTIONS=NO \
+          LIBRARY_STYLE=STATIC \
+          MACH_O_TYPE=staticlib \
+          EXECUTABLE_PREFIX=lib \
+          EXECUTABLE_EXTENSION=a \
+          PRODUCT_NAME=lua \
           -verbose
         
         echo "Build completed successfully!"
