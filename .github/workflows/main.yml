@@ -70,8 +70,7 @@ jobs:
     - name: Build static library
       run: |
         cd build/lua
-        WORKSPACE_DIR="$(pwd)"
-        echo "Workspace directory: $WORKSPACE_DIR"
+        echo "Current directory: $(pwd)"
         
         echo "Building for iOS devices (arm64)..."
         xcodebuild clean build \
@@ -83,15 +82,7 @@ jobs:
           BUILD_FOR_DISTRIBUTION=YES \
           ARCHS="arm64" \
           CODE_SIGNING_REQUIRED=NO \
-          CODE_SIGN_IDENTITY="" \
-          BUILD_DIR="$WORKSPACE_DIR" \
-          CONFIGURATION_BUILD_DIR="$WORKSPACE_DIR/Release-iphoneos" \
-          SYMROOT="$WORKSPACE_DIR" \
-          OBJROOT="$WORKSPACE_DIR" \
-          SKIP_INSTALL=NO \
-          DEPLOYMENT_LOCATION=NO \
-          DSTROOT="$WORKSPACE_DIR" \
-          INSTALL_PATH="" || exit 1
+          CODE_SIGN_IDENTITY="" || exit 1
         
         echo "iOS device build completed. Checking output:"
         ls -la Release-iphoneos/
@@ -106,15 +97,7 @@ jobs:
           BUILD_FOR_DISTRIBUTION=YES \
           ARCHS="x86_64 arm64" \
           CODE_SIGNING_REQUIRED=NO \
-          CODE_SIGN_IDENTITY="" \
-          BUILD_DIR="$WORKSPACE_DIR" \
-          CONFIGURATION_BUILD_DIR="$WORKSPACE_DIR/Release-iphonesimulator" \
-          SYMROOT="$WORKSPACE_DIR" \
-          OBJROOT="$WORKSPACE_DIR" \
-          SKIP_INSTALL=NO \
-          DEPLOYMENT_LOCATION=NO \
-          DSTROOT="$WORKSPACE_DIR" \
-          INSTALL_PATH="" || exit 1
+          CODE_SIGN_IDENTITY="" || exit 1
         
         echo "iOS simulator build completed. Checking output:"
         ls -la Release-iphonesimulator/
