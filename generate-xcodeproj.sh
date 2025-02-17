@@ -162,6 +162,9 @@ cat >> lua.xcodeproj/project.pbxproj << 'EOL'
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
 					"LUA_USE_POSIX=1",
+					"LUA_USE_IOS=1",
+					"LUA_USE_DLOPEN=0",
+					"LUA_USE_SYSTEM=0",
 				);
 				PRODUCT_NAME = lua;
 				EXECUTABLE_PREFIX = lib;
