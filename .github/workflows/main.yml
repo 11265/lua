@@ -72,6 +72,9 @@ jobs:
         set -e
         
         echo "Building for iOS devices (arm64)..."
+        mkdir -p "$(pwd)/Release-iphoneos"
+        mkdir -p "$(pwd)/lua.build/Release-iphoneos/lua.build"
+        
         xcodebuild build \
           -project lua.xcodeproj \
           -target lua \
@@ -87,8 +90,22 @@ jobs:
           -verbose
         
         echo "Build completed successfully!"
-        ls -la Release-iphoneos/liblua.a
-        file Release-iphoneos/liblua.a
+        echo "Checking build directory structure:"
+        ls -R "$(pwd)"
+        
+        echo "Checking Release-iphoneos directory:"
+        ls -la "$(pwd)/Release-iphoneos"
+        
+        echo "Checking for library file:"
+        find "$(pwd)" -name "liblua.a"
+        
+        if [ -f "$(pwd)/Release-iphoneos/liblua.a" ]; then
+          echo "Library file found!"
+          file "$(pwd)/Release-iphoneos/liblua.a"
+        else
+          echo "Library file not found in expected location"
+          exit 1
+        fi
         
     - name: Upload artifact
       uses: actions/upload-artifact@v4
